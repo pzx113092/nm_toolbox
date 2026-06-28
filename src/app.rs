@@ -269,11 +269,11 @@ fn isotope_info(app: &mut App, ui: &mut egui::Ui) {
                 app.tooltip_until = Some(ui.input(|i| i.time) + 1.5);
             }
 
-            if let Some(until) = app.tooltip_until {
-                if now > until {
-                    app.tooltip_text = None;
-                    app.tooltip_until = None;
-                }
+            if let Some(until) = app.tooltip_until
+                && now > until
+            {
+                app.tooltip_text = None;
+                app.tooltip_until = None;
             }
 
             if let Some(text) = &app.tooltip_text {
@@ -333,7 +333,7 @@ fn calculator(app: &mut App, ui: &mut egui::Ui) {
                     ui.add(
                         egui_extras::DatePickerButton::new(&mut app.cal_date)
                             .id_salt("cal_datepicker")
-                            .format(format!("")),
+                            .format(String::new()),
                     );
                     if ui.button("today").clicked() {
                         app.cal_date = d_now();
@@ -353,7 +353,7 @@ fn calculator(app: &mut App, ui: &mut egui::Ui) {
                     ui.add(
                         egui_extras::DatePickerButton::new(&mut app.target_date)
                             .id_salt("target_datepicker")
-                            .format(format!("")),
+                            .format(String::new()),
                     );
                     if ui.button("today").clicked() {
                         app.target_date = d_now();
