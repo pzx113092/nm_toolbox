@@ -51,22 +51,32 @@ impl Isotope {
         let style = egui::style::Style::default();
 
         let tx: (&str, &str) = match self {
-            Self::Tc99m => ("99m","Tc"),
+            Self::Tc99m => ("99m", "Tc"),
             Self::I131 => ("131", "I"),
             Self::I123 => ("123", "I"),
             Self::Lu177 => ("177", "Lu"),
         };
-    
+
         egui::RichText::new(tx.0)
             .strong()
             .small()
             .color(style.visuals.text_color())
-            .append_to(&mut job, &style, egui::FontSelection::Default, egui::Align::Min);
+            .append_to(
+                &mut job,
+                &style,
+                egui::FontSelection::Default,
+                egui::Align::Min,
+            );
 
         egui::RichText::new(tx.1)
             .strong()
             .color(style.visuals.text_color())
-            .append_to(&mut job, &style, egui::FontSelection::Default, egui::Align::Min);
+            .append_to(
+                &mut job,
+                &style,
+                egui::FontSelection::Default,
+                egui::Align::Min,
+            );
 
         job
     }
