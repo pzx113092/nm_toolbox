@@ -1,4 +1,4 @@
-var cacheName = 'egui-template-pwa';
+var cacheName = 'nm_toolbox';
 var filesToCache = [
   './',
   './index.html',
