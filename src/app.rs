@@ -5,6 +5,8 @@ use enums::{Isotope, Unit};
 
 pub struct App {
     // Converter
+    style: bool,
+    settings: bool,
     unit: Unit,
     conv_input: f32,
     // Isotope info
@@ -25,6 +27,8 @@ impl Default for App {
         let cal_time = t_now();
 
         Self {
+            style: false,
+            settings: false,
             unit,
             conv_input,
             isotope,
@@ -46,32 +50,70 @@ impl App {
 impl eframe::App for App {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let visuals = ui.ctx().global_style().visuals.clone();
+        let s = ui.ctx().clone();
+
+        if !self.style {
+            set_text_sizes(ui);
+            self.style = true;
+        }
+
+        egui::Window::new("🔧 Settings")
+            .open(&mut self.settings)
+            .vscroll(true)
+            .show(&s, |ui| {
+                s.settings_ui(ui);
+            });
+
         egui::Panel::top("top_panel").show(ui, |ui| {
             // The top panel is often a good place for a menu bar:
 
             egui::MenuBar::new().ui(ui, |ui| {
                 egui::widgets::global_theme_preference_buttons(ui);
+                if ui.button("🔧 Settings").clicked() {
+                    self.settings = true;
+                }
             });
         });
 
         egui::CentralPanel::default().show(ui, |ui| {
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                 egui::ScrollArea::vertical()
+                    .max_width(600.0)
                     .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysHidden)
                     .show(ui, |ui| {
-                        app_frame(&visuals).show(ui, |ui| {
-                            converter(self, ui);
-                        });
-                        app_frame(&visuals).show(ui, |ui| {
-                            isotope_info(self, ui);
-                        });
-                        app_frame(&visuals).show(ui, |ui| {
-                            calculator(self, ui);
+                        ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                            app_frame(&visuals).show(ui, |ui| {
+                                converter(self, ui);
+                            });
+                            app_frame(&visuals).show(ui, |ui| {
+                                isotope_info(self, ui);
+                            });
+                            app_frame(&visuals).show(ui, |ui| {
+                                calculator(self, ui);
+                            });
                         });
                     });
             });
         });
     }
+}
+
+pub fn set_text_sizes(ctx: &egui::Context) {
+    // Pick the sizes you want (in points)
+    let heading_font = egui::FontId::new(26.0, egui::FontFamily::Proportional);
+    let body_font = egui::FontId::new(20.0, egui::FontFamily::Proportional); // <- increase from default
+    let button_font = egui::FontId::new(20.0, egui::FontFamily::Proportional); // <- increase from default
+    ctx.all_styles_mut(|style| {
+        style
+            .text_styles
+            .insert(egui::TextStyle::Heading, heading_font.clone());
+        style
+            .text_styles
+            .insert(egui::TextStyle::Body, body_font.clone());
+        style
+            .text_styles
+            .insert(egui::TextStyle::Button, button_font.clone());
+    });
 }
 
 fn app_frame(visuals: &egui::Visuals) -> egui::Frame {
@@ -88,18 +130,20 @@ fn converter(app: &mut App, ui: &mut egui::Ui) {
     ui.vertical_centered(|ui| {
         egui::Grid::new("unit_grid")
             .num_columns(2)
-            .spacing([4.0, 4.0])
+            .spacing([8.0, 10.0])
             .striped(true)
             .show(ui, |ui| {
-                egui::ComboBox::from_id_salt("unit_combo")
-                    .selected_text(app.unit.display())
-                    .width(20.0)
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut app.unit, Unit::MegaBq, "MBq");
-                        ui.selectable_value(&mut app.unit, Unit::GigaBq, "GBq");
-                        ui.selectable_value(&mut app.unit, Unit::MicroCi, "µCi");
-                        ui.selectable_value(&mut app.unit, Unit::MiliCi, "mCi");
-                    });
+                ui.vertical_centered_justified(|ui| {
+                    egui::ComboBox::from_id_salt("unit_combo")
+                        .selected_text(app.unit.display())
+                        .width(20.0)
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut app.unit, Unit::MegaBq, "MBq");
+                            ui.selectable_value(&mut app.unit, Unit::GigaBq, "GBq");
+                            ui.selectable_value(&mut app.unit, Unit::MicroCi, "µCi");
+                            ui.selectable_value(&mut app.unit, Unit::MiliCi, "mCi");
+                        });
+                });
 
                 ui.add(
                     egui::DragValue::new(&mut app.conv_input)
@@ -149,10 +193,12 @@ fn isotope_info(app: &mut App, ui: &mut egui::Ui) {
     ui.vertical_centered(|ui| {
         egui::Grid::new("isotope_grid")
             .num_columns(2)
-            .spacing([8.0, 4.0])
+            .spacing([8.0, 10.0])
             .striped(true)
             .show(ui, |ui| {
-                isotope_combo(app, ui, "first");
+                ui.vertical_centered_justified(|ui| {
+                    isotope_combo(app, ui, "first");
+                });
                 ui.end_row();
                 ui.separator();
                 ui.separator();
@@ -185,6 +231,7 @@ fn isotope_info(app: &mut App, ui: &mut egui::Ui) {
             Plot::new("Activity_plot")
                 .allow_drag(false)
                 .allow_scroll(false)
+                .allow_zoom(false)
                 .width(ui.available_width())
                 .view_aspect(2.0)
                 .show_grid(false)
@@ -210,6 +257,7 @@ fn isotope_info(app: &mut App, ui: &mut egui::Ui) {
             Plot::new("Activity_plot")
                 .allow_drag(false)
                 .allow_scroll(false)
+                .allow_zoom(false)
                 .width(ui.available_width())
                 .view_aspect(2.0)
                 .show_grid(false)
@@ -225,17 +273,19 @@ fn calculator(app: &mut App, ui: &mut egui::Ui) {
     ui.vertical_centered(|ui| {
         egui::Grid::new("activity_calculator")
             .num_columns(2)
-            .spacing([8.0, 4.0])
+            .spacing([8.0, 10.0])
             .striped(true)
             .show(ui, |ui| {
-                isotope_combo(app, ui, "second");
+                ui.vertical_centered_justified(|ui| {
+                    isotope_combo(app, ui, "second");
+                });
                 ui.end_row();
 
                 ui.separator();
                 ui.separator();
                 ui.end_row();
 
-                ui.label("Calibration activity:");
+                ui.label("Activity:");
                 ui.add(
                     egui::DragValue::new(&mut app.conv_input)
                         .range(0.0..=1000000.0)
@@ -243,8 +293,8 @@ fn calculator(app: &mut App, ui: &mut egui::Ui) {
                 );
                 ui.end_row();
 
-                ui.label("Calibration: ");
-                ui.horizontal(|ui| {
+                ui.label("Initial: ");
+                ui.with_layout(egui::Layout::left_to_right(egui::Align::LEFT), |ui| {
                     ui.add(
                         egui_extras::DatePickerButton::new(&mut app.cal_date)
                             .id_salt("cal_datepicker"),
@@ -252,15 +302,18 @@ fn calculator(app: &mut App, ui: &mut egui::Ui) {
                     if ui.button("today").clicked() {
                         app.cal_date = d_now();
                     }
+
                     time_picker(ui, &mut app.cal_time);
+
                     if ui.button("now").clicked() {
                         app.cal_time = t_now();
                     }
                 });
+
                 ui.end_row();
 
                 ui.label("Target:");
-                ui.horizontal(|ui| {
+                ui.with_layout(egui::Layout::left_to_right(egui::Align::LEFT), |ui| {
                     ui.add(
                         egui_extras::DatePickerButton::new(&mut app.target_date)
                             .id_salt("target_datepicker"),
@@ -274,8 +327,7 @@ fn calculator(app: &mut App, ui: &mut egui::Ui) {
                     }
                 });
                 ui.end_row();
-                ui.label("Activity @ target:");
-                //ui.label()
+                ui.label("Result:");
                 let cal_t = i32_to_hms(app.cal_time);
                 let tar_t = i32_to_hms(app.target_time);
                 let span = app.target_date.to_datetime(tar_t) - app.cal_date.to_datetime(cal_t);

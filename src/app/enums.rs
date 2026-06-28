@@ -59,7 +59,7 @@ impl Isotope {
 
         egui::RichText::new(tx.0)
             .strong()
-            .small()
+            .size(10.0)
             .color(style.visuals.text_color())
             .append_to(
                 &mut job,
@@ -70,6 +70,7 @@ impl Isotope {
 
         egui::RichText::new(tx.1)
             .strong()
+            .size(20.0)
             .color(style.visuals.text_color())
             .append_to(
                 &mut job,

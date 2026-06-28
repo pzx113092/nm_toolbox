@@ -20,7 +20,7 @@ fn main() -> eframe::Result {
         ..Default::default()
     };
     eframe::run_native(
-        "eframe template",
+        "nm_toolbox",
         native_options,
         Box::new(|_| Ok(Box::new(nm_toolbox::App::new()))),
     )
