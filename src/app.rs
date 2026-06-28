@@ -1,6 +1,6 @@
 mod enums;
 use egui::{CornerRadius, Margin};
-use egui_plot::{HoverPosition, Line, Plot, PlotPoints};
+use egui_plot::{Line, Plot, PlotPoints};
 use enums::{Isotope, Unit};
 
 pub struct App {
@@ -16,6 +16,8 @@ pub struct App {
     cal_time: i32,
     target_date: jiff::civil::Date,
     target_time: i32,
+    tooltip_text: Option<String>,
+    tooltip_until: Option<f64>,
 }
 
 impl Default for App {
@@ -36,6 +38,8 @@ impl Default for App {
             cal_time,
             target_time: cal_time,
             target_date: cal_date,
+            tooltip_text: None,
+            tooltip_until: None,
         }
     }
 }
@@ -227,37 +231,68 @@ fn isotope_info(app: &mut App, ui: &mut egui::Ui) {
                 .collect();
 
             let line = Line::new("activity", pp);
+            let now = ui.input(|i| i.time);
+            use std::cell::RefCell;
+            let latest: RefCell<Option<String>> = RefCell::new(None);
 
-            Plot::new("Activity_plot")
+            egui_plot::Plot::new("Activity_plot")
                 .allow_drag(false)
                 .allow_scroll(false)
                 .allow_zoom(false)
+                .allow_axis_zoom_drag(false)
                 .width(ui.available_width())
                 .view_aspect(2.0)
                 .show_grid(false)
                 .x_axis_label("[s]")
                 .y_axis_label(format!("[{}]", app.unit.display()))
-                .label_formatter(|pos| match pos {
-                    HoverPosition::NearDataPoint {
-                        plot_name,
-                        position,
-                        ..
-                    } if !plot_name.is_empty() => Some(format!(
-                        "Activity: {:.1} {} ({:.1}%)\nTime passed: {}",
-                        position.y,
-                        app.unit.display(),
-                        position.y * 100.0 / app.conv_input as f64,
-                        parse_hl(position.x as f32)
-                    )),
-                    _ => None,
+                .label_formatter(|pos| {
+                    let text = match pos {
+                        egui_plot::HoverPosition::NearDataPoint { position, .. } if true => {
+                            Some(format!(
+                                "Activity: {:.1} {} ({:.1}%)\nTime passed: {}",
+                                position.y,
+                                app.unit.display(),
+                                position.y * 100.0 / app.conv_input as f64,
+                                parse_hl(position.x as f32)
+                            ))
+                        }
+                        _ => None,
+                    };
+
+                    *latest.borrow_mut() = text.clone();
+                    text
                 })
                 .show(ui, |plot_ui| plot_ui.line(line));
+
+            if let Some(s) = latest.into_inner() {
+                app.tooltip_text = Some(s);
+                app.tooltip_until = Some(ui.input(|i| i.time) + 1.5);
+            }
+
+            if let Some(until) = app.tooltip_until {
+                if now > until {
+                    app.tooltip_text = None;
+                    app.tooltip_until = None;
+                }
+            }
+
+            if let Some(text) = &app.tooltip_text {
+                egui::Window::new("area")
+                    .title_bar(false)
+                    .movable(true)
+                    .drag_area(egui::WindowDrag::Anywhere)
+                    .resizable(false)
+                    .show(ui, |ui| {
+                        ui.add(egui::Label::new(text));
+                    });
+            }
         } else {
             let line = Line::new("activity", PlotPoints::default());
             Plot::new("Activity_plot")
                 .allow_drag(false)
                 .allow_scroll(false)
                 .allow_zoom(false)
+                .allow_axis_zoom_drag(false)
                 .width(ui.available_width())
                 .view_aspect(2.0)
                 .show_grid(false)
@@ -297,7 +332,8 @@ fn calculator(app: &mut App, ui: &mut egui::Ui) {
                 ui.with_layout(egui::Layout::left_to_right(egui::Align::LEFT), |ui| {
                     ui.add(
                         egui_extras::DatePickerButton::new(&mut app.cal_date)
-                            .id_salt("cal_datepicker"),
+                            .id_salt("cal_datepicker")
+                            .format(format!("")),
                     );
                     if ui.button("today").clicked() {
                         app.cal_date = d_now();
@@ -316,7 +352,8 @@ fn calculator(app: &mut App, ui: &mut egui::Ui) {
                 ui.with_layout(egui::Layout::left_to_right(egui::Align::LEFT), |ui| {
                     ui.add(
                         egui_extras::DatePickerButton::new(&mut app.target_date)
-                            .id_salt("target_datepicker"),
+                            .id_salt("target_datepicker")
+                            .format(format!("")),
                     );
                     if ui.button("today").clicked() {
                         app.target_date = d_now();
