@@ -9,7 +9,7 @@ impl TimeID {
     pub fn display(&self) -> &str {
         match self {
             Self::Calibration => "Cal",
-            _ => "Target",
+            Self::Target => "Target",
         }
     }
 }

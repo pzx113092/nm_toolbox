@@ -18,8 +18,8 @@ pub struct App {
     target_date: jiff::civil::Date,
     tooltip_text: Option<String>,
     tooltip_until: Option<f64>,
-    cal_time: (u8, u8, u8),
-    target_time: (u8, u8, u8),
+    cal_time: (i8, i8, i8),
+    target_time: (i8, i8, i8),
     time_area_state: (bool, bool),
 }
 
@@ -347,7 +347,7 @@ fn calculator(app: &mut App, ui: &mut egui::Ui) {
                             .show_icon(false),
                     );
 
-                    time_picker(ui, app, TimeID::Calibration);
+                    time_picker(ui, app, &TimeID::Calibration);
                 });
 
                 ui.end_row();
@@ -360,23 +360,14 @@ fn calculator(app: &mut App, ui: &mut egui::Ui) {
                             .format("%d-%m-%y")
                             .show_icon(false),
                     );
-                    time_picker(ui, app, TimeID::Target);
+                    time_picker(ui, app, &TimeID::Target);
                 });
 
                 ui.end_row();
                 ui.label("Result:");
-                let cal_t = jiff::civil::time(
-                    app.cal_time.0 as i8,
-                    app.cal_time.1 as i8,
-                    app.cal_time.2 as i8,
-                    0,
-                );
-                let tar_t = jiff::civil::time(
-                    app.target_time.0 as i8,
-                    app.target_time.1 as i8,
-                    app.target_time.2 as i8,
-                    0,
-                );
+                let cal_t = jiff::civil::time(app.cal_time.0, app.cal_time.1, app.cal_time.2, 0);
+                let tar_t =
+                    jiff::civil::time(app.target_time.0, app.target_time.1, app.target_time.2, 0);
                 let span = app.target_date.to_datetime(tar_t) - app.cal_date.to_datetime(cal_t);
                 let span_f = span.total(jiff::Unit::Second).unwrap_or(0.0);
                 ui.label(format!(
@@ -423,10 +414,10 @@ fn activity_left(n0: f32, hl: f32, t: f32) -> f32 {
     }
 }
 
-fn time_picker(ui: &mut egui::Ui, app: &mut App, id: TimeID) {
+fn time_picker(ui: &mut egui::Ui, app: &mut App, id: &TimeID) {
     let time = match id {
         TimeID::Calibration => &mut app.cal_time,
-        _ => &mut app.target_time,
+        TimeID::Target => &mut app.target_time,
     };
 
     let hm_time = format!("{}:{}", &time.0, &time.1);
@@ -434,13 +425,13 @@ fn time_picker(ui: &mut egui::Ui, app: &mut App, id: TimeID) {
     if ui.button(&hm_time).clicked() {
         match id {
             TimeID::Calibration => app.time_area_state.0 = true,
-            _ => app.time_area_state.1 = true,
+            TimeID::Target => app.time_area_state.1 = true,
         }
     }
 
     let mut open = match id {
         TimeID::Calibration => app.time_area_state.0,
-        _ => app.time_area_state.1,
+        TimeID::Target => app.time_area_state.1,
     };
 
     egui::Window::new(id.display())
@@ -455,11 +446,11 @@ fn time_picker(ui: &mut egui::Ui, app: &mut App, id: TimeID) {
                 ui.add(
                     egui::DragValue::new(match id {
                         TimeID::Calibration => &mut app.cal_time.0,
-                        _ => &mut app.target_time.0,
+                        TimeID::Target => &mut app.target_time.0,
                     })
                     .range(0..=23)
                     .custom_formatter(|n, _| {
-                        let n = n as u8;
+                        let n = n as i8;
                         format!("{n:02}")
                     }),
                 );
@@ -468,16 +459,16 @@ fn time_picker(ui: &mut egui::Ui, app: &mut App, id: TimeID) {
                 ui.add(
                     egui::DragValue::new(match id {
                         TimeID::Calibration => &mut app.cal_time.1,
-                        _ => &mut app.target_time.1,
+                        TimeID::Target => &mut app.target_time.1,
                     })
                     .range(0..=59)
                     .custom_formatter(|n, _| {
-                        let n = n as u8;
+                        let n = n as i8;
                         format!(" {n:02} ")
                     }),
                 );
                 if ui.button(" Now ").clicked() {
-                    if let TimeID::Calibration = id {
+                    if matches!(id, TimeID::Calibration) {
                         app.cal_time = t_now();
                         app.time_area_state.0 = false;
                     } else {
@@ -488,7 +479,7 @@ fn time_picker(ui: &mut egui::Ui, app: &mut App, id: TimeID) {
             });
 
             if ui.button(" Ok ").clicked() {
-                if let TimeID::Calibration = id {
+                if matches!(id, TimeID::Calibration) {
                     app.cal_time.2 = 0;
                     app.time_area_state.0 = false;
                 } else {
@@ -499,9 +490,9 @@ fn time_picker(ui: &mut egui::Ui, app: &mut App, id: TimeID) {
         });
 }
 
-fn t_now() -> (u8, u8, u8) {
+fn t_now() -> (i8, i8, i8) {
     let now = jiff::Zoned::now();
-    (now.hour() as u8, now.minute() as u8, now.second() as u8)
+    (now.hour(), now.minute(), now.second())
 }
 
 fn d_now() -> jiff::civil::Date {
