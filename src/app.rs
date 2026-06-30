@@ -3,6 +3,8 @@ use egui::{CornerRadius, Margin};
 use egui_plot::{Line, Plot, PlotPoints};
 use enums::{Isotope, Unit};
 
+use crate::app::enums::TimeID;
+
 pub struct App {
     // Converter
     style: bool,
@@ -13,11 +15,12 @@ pub struct App {
     isotope: Isotope,
     //Activity calculator
     cal_date: jiff::civil::Date,
-    cal_time: i32,
     target_date: jiff::civil::Date,
-    target_time: i32,
     tooltip_text: Option<String>,
     tooltip_until: Option<f64>,
+    cal_time: (i8, i8, i8),
+    target_time: (i8, i8, i8),
+    time_area_state: (bool, bool),
 }
 
 impl Default for App {
@@ -25,8 +28,8 @@ impl Default for App {
         let unit = Unit::MegaBq;
         let conv_input = 0.0;
         let isotope = Isotope::Tc99m;
-        let cal_date = d_now();
-        let cal_time = t_now();
+        let cal_date = jiff::Zoned::now().date();
+        let time = t_now();
 
         Self {
             style: false,
@@ -35,11 +38,12 @@ impl Default for App {
             conv_input,
             isotope,
             cal_date,
-            cal_time,
-            target_time: cal_time,
             target_date: cal_date,
             tooltip_text: None,
             tooltip_until: None,
+            time_area_state: (false, false),
+            cal_time: time,
+            target_time: time,
         }
     }
 }
@@ -69,35 +73,41 @@ impl eframe::App for App {
             });
 
         egui::Panel::top("top_panel").show(ui, |ui| {
-            // The top panel is often a good place for a menu bar:
-
             egui::MenuBar::new().ui(ui, |ui| {
-                egui::widgets::global_theme_preference_buttons(ui);
+                egui::widgets::global_theme_preference_switch(ui);
+                ui.add(egui::Separator::default().vertical());
                 if ui.button("🔧 Settings").clicked() {
                     self.settings = true;
+                }
+                ui.add(egui::Separator::default().vertical());
+                if ui.button("⟲ Reset").clicked() {
+                    *self = Self::default();
                 }
             });
         });
 
         egui::CentralPanel::default().show(ui, |ui| {
-            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                egui::ScrollArea::vertical()
-                    .max_width(600.0)
-                    .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysHidden)
-                    .show(ui, |ui| {
-                        ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                            app_frame(&visuals).show(ui, |ui| {
-                                converter(self, ui);
-                            });
-                            app_frame(&visuals).show(ui, |ui| {
-                                isotope_info(self, ui);
-                            });
-                            app_frame(&visuals).show(ui, |ui| {
-                                calculator(self, ui);
+            ui.with_layout(
+                egui::Layout::top_down(egui::Align::Center).with_cross_align(egui::Align::Center),
+                |ui| {
+                    egui::ScrollArea::both()
+                        .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysHidden)
+                        .max_width(600.0)
+                        .show(ui, |ui| {
+                            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                                app_frame(&visuals).show(ui, |ui| {
+                                    calculator(self, ui);
+                                });
+                                app_frame(&visuals).show(ui, |ui| {
+                                    converter(self, ui);
+                                });
+                                app_frame(&visuals).show(ui, |ui| {
+                                    isotope_info(self, ui);
+                                });
                             });
                         });
-                    });
-            });
+                },
+            );
         });
     }
 }
@@ -333,17 +343,11 @@ fn calculator(app: &mut App, ui: &mut egui::Ui) {
                     ui.add(
                         egui_extras::DatePickerButton::new(&mut app.cal_date)
                             .id_salt("cal_datepicker")
-                            .format(String::new()),
+                            .format("%d-%m-%y")
+                            .show_icon(false),
                     );
-                    if ui.button("today").clicked() {
-                        app.cal_date = d_now();
-                    }
 
-                    time_picker(ui, &mut app.cal_time);
-
-                    if ui.button("now").clicked() {
-                        app.cal_time = t_now();
-                    }
+                    time_picker(ui, app, &TimeID::Calibration);
                 });
 
                 ui.end_row();
@@ -352,21 +356,18 @@ fn calculator(app: &mut App, ui: &mut egui::Ui) {
                 ui.with_layout(egui::Layout::left_to_right(egui::Align::LEFT), |ui| {
                     ui.add(
                         egui_extras::DatePickerButton::new(&mut app.target_date)
-                            .id_salt("target_datepicker")
-                            .format(String::new()),
+                            .id_salt("tar_datepicker")
+                            .format("%d-%m-%y")
+                            .show_icon(false),
                     );
-                    if ui.button("today").clicked() {
-                        app.target_date = d_now();
-                    }
-                    time_picker(ui, &mut app.target_time);
-                    if ui.button("now").clicked() {
-                        app.target_time = t_now();
-                    }
+                    time_picker(ui, app, &TimeID::Target);
                 });
+
                 ui.end_row();
                 ui.label("Result:");
-                let cal_t = i32_to_hms(app.cal_time);
-                let tar_t = i32_to_hms(app.target_time);
+                let cal_t = jiff::civil::time(app.cal_time.0, app.cal_time.1, app.cal_time.2, 0);
+                let tar_t =
+                    jiff::civil::time(app.target_time.0, app.target_time.1, app.target_time.2, 0);
                 let span = app.target_date.to_datetime(tar_t) - app.cal_date.to_datetime(cal_t);
                 let span_f = span.total(jiff::Unit::Second).unwrap_or(0.0);
                 ui.label(format!(
@@ -392,7 +393,6 @@ fn isotope_combo(app: &mut App, ui: &mut egui::Ui, name: &str) {
             ui.selectable_value(&mut app.isotope, Isotope::Lu177, Isotope::Lu177.display());
         });
 }
-
 // duration in seconds
 fn parse_hl(duration: f32) -> String {
     if duration >= 86400.0 {
@@ -414,59 +414,83 @@ fn activity_left(n0: f32, hl: f32, t: f32) -> f32 {
     }
 }
 
-fn time_picker(ui: &mut egui::Ui, time: &mut i32) {
-    ui.horizontal(|ui| {
-        //let mut hour_str = format!("{:02}", &app.cal_time.0);
-        //let mut h_buf = egui::TextBuffer::insert_text(&mut self, text, char_index)
-        ui.add(
-            egui::DragValue::new(time)
-                .range(0..=((60 * 60 * 24) - 1))
-                .custom_formatter(|n, _| {
-                    let n = n as i32;
-                    let hours = n / (60 * 60);
-                    let mins = (n / 60) % 60;
-                    let secs = n % 60;
-                    format!("{hours:02}:{mins:02}:{secs:02}")
-                })
-                .custom_parser(|s| {
-                    let parts: Vec<&str> = s.split(':').collect();
-                    if parts.len() == 3 {
-                        parts[0]
-                            .parse::<i32>()
-                            .and_then(|h| {
-                                let m = parts[1].parse::<i32>()?;
-                                parts[2]
-                                    .parse::<i32>()
-                                    .map(|s| ((h * 60 * 60) + (m * 60) + s) as f64)
-                            })
-                            .ok()
+fn time_picker(ui: &mut egui::Ui, app: &mut App, id: &TimeID) {
+    let time = match id {
+        TimeID::Calibration => &mut app.cal_time,
+        TimeID::Target => &mut app.target_time,
+    };
+
+    let hm_time = format!("{}:{}", &time.0, &time.1);
+
+    if ui.button(&hm_time).clicked() {
+        match id {
+            TimeID::Calibration => app.time_area_state.0 = true,
+            TimeID::Target => app.time_area_state.1 = true,
+        }
+    }
+
+    let mut open = match id {
+        TimeID::Calibration => app.time_area_state.0,
+        TimeID::Target => app.time_area_state.1,
+    };
+
+    egui::Window::new(id.display())
+        .open(&mut open)
+        .default_pos(ui.pointer_latest_pos().unwrap_or_default())
+        .title_bar(false)
+        .movable(true)
+        .drag_area(egui::WindowDrag::Anywhere)
+        .resizable(false)
+        .show(ui, |ui| {
+            ui.horizontal(|ui| {
+                ui.add(
+                    egui::DragValue::new(match id {
+                        TimeID::Calibration => &mut app.cal_time.0,
+                        TimeID::Target => &mut app.target_time.0,
+                    })
+                    .range(0..=23)
+                    .custom_formatter(|n, _| {
+                        let n = n as i8;
+                        format!("{n:02}")
+                    }),
+                );
+
+                ui.label(":");
+                ui.add(
+                    egui::DragValue::new(match id {
+                        TimeID::Calibration => &mut app.cal_time.1,
+                        TimeID::Target => &mut app.target_time.1,
+                    })
+                    .range(0..=59)
+                    .custom_formatter(|n, _| {
+                        let n = n as i8;
+                        format!(" {n:02} ")
+                    }),
+                );
+                if ui.button(" Now ").clicked() {
+                    if matches!(id, TimeID::Calibration) {
+                        app.cal_time = t_now();
+                        app.time_area_state.0 = false;
                     } else {
-                        None
+                        app.target_time = t_now();
+                        app.time_area_state.1 = false;
                     }
-                }),
-        );
-    });
+                }
+            });
+
+            if ui.button(" Ok ").clicked() {
+                if matches!(id, TimeID::Calibration) {
+                    app.cal_time.2 = 0;
+                    app.time_area_state.0 = false;
+                } else {
+                    app.target_time.2 = 0;
+                    app.time_area_state.1 = false;
+                }
+            }
+        });
 }
 
-fn t_now() -> i32 {
-    let now = (
-        jiff::Zoned::now().hour() as i32,
-        jiff::Zoned::now().minute() as i32,
-        jiff::Zoned::now().second() as i32,
-    );
-    now.0 * 3600 + now.1 * 60 + now.2
-}
-
-fn d_now() -> jiff::civil::Date {
-    jiff::Zoned::now().date()
-}
-
-fn i32_to_hms(s: i32) -> jiff::civil::Time {
-    let mut sec = s;
-    let hours = sec / 3600;
-    sec -= hours * 3600;
-    let minutes = sec / 60;
-    sec -= minutes * 60;
-
-    jiff::civil::time(hours as i8, minutes as i8, sec as i8, 0)
+fn t_now() -> (i8, i8, i8) {
+    let now = jiff::Zoned::now();
+    (now.hour(), now.minute(), now.second())
 }
