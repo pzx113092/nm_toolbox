@@ -439,13 +439,13 @@ fn time_picker(ui: &mut egui::Ui, app: &mut App, id: TimeID) {
     }
 
     let mut open = match id {
-        TimeID::Calibration => app.time_area_state.0.clone(),
-        _ => app.time_area_state.1.clone(),
+        TimeID::Calibration => app.time_area_state.0,
+        _ => app.time_area_state.1,
     };
 
     egui::Window::new(id.display())
         .open(&mut open)
-        .default_pos(ui.pointer_latest_pos().unwrap_or(egui::Pos2::default()))
+        .default_pos(ui.pointer_latest_pos().unwrap_or_default())
         .title_bar(false)
         .movable(true)
         .drag_area(egui::WindowDrag::Anywhere)
@@ -477,30 +477,24 @@ fn time_picker(ui: &mut egui::Ui, app: &mut App, id: TimeID) {
                     }),
                 );
                 if ui.button(" Now ").clicked() {
-                    match id {
-                        TimeID::Calibration => {
-                            app.cal_time = t_now();
-                            app.time_area_state.0 = false
-                        }
-                        _ => {
-                            app.target_time = t_now();
-                            app.time_area_state.1 = false
-                        }
-                    };
+                    if let TimeID::Calibration = id {
+                        app.cal_time = t_now();
+                        app.time_area_state.0 = false;
+                    } else {
+                        app.target_time = t_now();
+                        app.time_area_state.1 = false;
+                    }
                 }
             });
 
             if ui.button(" Ok ").clicked() {
-                match id {
-                    TimeID::Calibration => {
-                        app.cal_time.2 = 0;
-                        app.time_area_state.0 = false
-                    }
-                    _ => {
-                        app.target_time.2 = 0;
-                        app.time_area_state.1 = false
-                    }
-                };
+                if let TimeID::Calibration = id {
+                    app.cal_time.2 = 0;
+                    app.time_area_state.0 = false;
+                } else {
+                    app.target_time.2 = 0;
+                    app.time_area_state.1 = false;
+                }
             }
         });
 }
