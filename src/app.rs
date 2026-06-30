@@ -28,7 +28,7 @@ impl Default for App {
         let unit = Unit::MegaBq;
         let conv_input = 0.0;
         let isotope = Isotope::Tc99m;
-        let cal_date = d_now();
+        let cal_date = jiff::Zoned::now().date();
         let time = t_now();
 
         Self {
@@ -493,8 +493,4 @@ fn time_picker(ui: &mut egui::Ui, app: &mut App, id: &TimeID) {
 fn t_now() -> (i8, i8, i8) {
     let now = jiff::Zoned::now();
     (now.hour(), now.minute(), now.second())
-}
-
-fn d_now() -> jiff::civil::Date {
-    jiff::Zoned::now().date()
 }
