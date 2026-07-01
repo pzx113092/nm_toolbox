@@ -5,15 +5,6 @@ pub enum TimeID {
     Target,
 }
 
-impl TimeID {
-    pub fn display(&self) -> &str {
-        match self {
-            Self::Calibration => "Cal",
-            Self::Target => "Target",
-        }
-    }
-}
-
 #[derive(Debug, PartialEq, Eq)]
 pub enum Unit {
     MegaBq,

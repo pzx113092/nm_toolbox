@@ -20,7 +20,6 @@ pub struct App {
     tooltip_until: Option<f64>,
     cal_time: (i8, i8, i8),
     target_time: (i8, i8, i8),
-    time_area_state: (bool, bool),
 }
 
 impl Default for App {
@@ -41,7 +40,6 @@ impl Default for App {
             target_date: cal_date,
             tooltip_text: None,
             tooltip_until: None,
-            time_area_state: (false, false),
             cal_time: time,
             target_time: time,
         }
@@ -415,79 +413,39 @@ fn activity_left(n0: f32, hl: f32, t: f32) -> f32 {
 }
 
 fn time_picker(ui: &mut egui::Ui, app: &mut App, id: &TimeID) {
-    let time = match id {
-        TimeID::Calibration => &mut app.cal_time,
-        TimeID::Target => &mut app.target_time,
-    };
+    ui.horizontal(|ui| {
+        ui.add_space(10.0);
+        ui.add(
+            egui::DragValue::new(match id {
+                TimeID::Calibration => &mut app.cal_time.0,
+                TimeID::Target => &mut app.target_time.0,
+            })
+            .range(0..=23)
+            .custom_formatter(|n, _| {
+                let n = n as i8;
+                format!("{n:02}")
+            }),
+        );
 
-    let hm_time = format!("{}:{}", &time.0, &time.1);
+        ui.add(
+            egui::DragValue::new(match id {
+                TimeID::Calibration => &mut app.cal_time.1,
+                TimeID::Target => &mut app.target_time.1,
+            })
+            .range(0..=59)
+            .custom_formatter(|n, _| {
+                let n = n as i8;
+                format!(" {n:02} ")
+            }),
+        );
 
-    if ui.button(&hm_time).clicked() {
-        match id {
-            TimeID::Calibration => app.time_area_state.0 = true,
-            TimeID::Target => app.time_area_state.1 = true,
-        }
-    }
-
-    let mut open = match id {
-        TimeID::Calibration => app.time_area_state.0,
-        TimeID::Target => app.time_area_state.1,
-    };
-
-    egui::Window::new(id.display())
-        .open(&mut open)
-        .default_pos(ui.pointer_latest_pos().unwrap_or_default())
-        .title_bar(false)
-        .movable(true)
-        .drag_area(egui::WindowDrag::Anywhere)
-        .resizable(false)
-        .show(ui, |ui| {
-            ui.horizontal(|ui| {
-                ui.add(
-                    egui::DragValue::new(match id {
-                        TimeID::Calibration => &mut app.cal_time.0,
-                        TimeID::Target => &mut app.target_time.0,
-                    })
-                    .range(0..=23)
-                    .custom_formatter(|n, _| {
-                        let n = n as i8;
-                        format!("{n:02}")
-                    }),
-                );
-
-                ui.label(":");
-                ui.add(
-                    egui::DragValue::new(match id {
-                        TimeID::Calibration => &mut app.cal_time.1,
-                        TimeID::Target => &mut app.target_time.1,
-                    })
-                    .range(0..=59)
-                    .custom_formatter(|n, _| {
-                        let n = n as i8;
-                        format!(" {n:02} ")
-                    }),
-                );
-                if ui.button(" Now ").clicked() {
-                    if matches!(id, TimeID::Calibration) {
-                        app.cal_time = t_now();
-                        app.time_area_state.0 = false;
-                    } else {
-                        app.target_time = t_now();
-                        app.time_area_state.1 = false;
-                    }
-                }
-            });
-
-            if ui.button(" Ok ").clicked() {
-                if matches!(id, TimeID::Calibration) {
-                    app.cal_time.2 = 0;
-                    app.time_area_state.0 = false;
-                } else {
-                    app.target_time.2 = 0;
-                    app.time_area_state.1 = false;
-                }
+        if ui.button("Now").clicked() {
+            match id {
+                TimeID::Calibration => app.cal_time = t_now(),
+                TimeID::Target => app.target_time = t_now(),
             }
-        });
+        }
+    });
 }
 
 fn t_now() -> (i8, i8, i8) {
