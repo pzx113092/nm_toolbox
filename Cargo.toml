@@ -13,11 +13,12 @@ targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
 [dependencies]
 egui = "0.35.0"
-eframe = { version = "0.35.0" }
+eframe = { version = "0.35.0", features = ["persistence"] }
 log = "0.4.27"
 egui_plot = "0.36.0"
-egui_extras = { version = "0.35.0", features = ["datepicker"] }
-jiff = { version = "0.2.29"}
+egui_extras = { version = "0.35.0", features = ["datepicker", "serde"] }
+jiff = { version = "0.2.29", features = ["serde"]}
+serde = { version = "1.0.228", features = ["derive"] }
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

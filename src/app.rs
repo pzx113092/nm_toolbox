@@ -1,10 +1,12 @@
 mod enums;
 use egui::{CornerRadius, Margin};
-use egui_plot::{Line, Plot, PlotPoints};
+use egui_plot::{Line, PlotPoints};
 use enums::{Isotope, Unit};
 
 use crate::app::enums::TimeID;
 
+#[derive(serde::Deserialize, serde::Serialize)]
+#[serde(default)]
 pub struct App {
     // Converter
     style: bool,
@@ -20,6 +22,7 @@ pub struct App {
     tooltip_until: Option<f64>,
     cal_time: (i8, i8, i8),
     target_time: (i8, i8, i8),
+    zoom_factor: f32,
 }
 
 impl Default for App {
@@ -42,21 +45,36 @@ impl Default for App {
             tooltip_until: None,
             cal_time: time,
             target_time: time,
+            zoom_factor: 1.3,
         }
     }
 }
 
 impl App {
     /// Called once before the first frame.
-    pub fn new() -> Self {
-        Default::default()
+    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+        // This is also where you can customize the look and feel of egui using
+        // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
+        set_text_sizes(&cc.egui_ctx);
+        cc.egui_ctx.set_zoom_factor(1.3);
+
+        if let Some(storage) = cc.storage {
+            eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default()
+        } else {
+            Default::default()
+        }
     }
 }
 
 impl eframe::App for App {
+    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        eframe::set_value(storage, eframe::APP_KEY, self);
+    }
+
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let visuals = ui.ctx().global_style().visuals.clone();
         let s = ui.ctx().clone();
+        ui.set_zoom_factor(self.zoom_factor);
 
         if !self.style {
             set_text_sizes(ui);
@@ -74,12 +92,19 @@ impl eframe::App for App {
             egui::MenuBar::new().ui(ui, |ui| {
                 egui::widgets::global_theme_preference_switch(ui);
                 ui.add(egui::Separator::default().vertical());
-                if ui.button("🔧 Settings").clicked() {
+                if ui.button("🔧").clicked() {
                     self.settings = true;
                 }
                 ui.add(egui::Separator::default().vertical());
                 if ui.button("⟲ Reset").clicked() {
                     *self = Self::default();
+                }
+                ui.add(egui::Separator::default().vertical());
+                if ui.button("➖").clicked() {
+                    self.zoom_factor -= 0.1;
+                }
+                if ui.button("➕").clicked() {
+                    self.zoom_factor += 0.1;
                 }
             });
         });
@@ -294,19 +319,6 @@ fn isotope_info(app: &mut App, ui: &mut egui::Ui) {
                         ui.add(egui::Label::new(text));
                     });
             }
-        } else {
-            let line = Line::new("activity", PlotPoints::default());
-            Plot::new("Activity_plot")
-                .allow_drag(false)
-                .allow_scroll(false)
-                .allow_zoom(false)
-                .allow_axis_zoom_drag(false)
-                .width(ui.available_width())
-                .view_aspect(2.0)
-                .show_grid(false)
-                .x_axis_label("[s]")
-                .y_axis_label(format!("[{}]", app.unit.display()))
-                .show(ui, |plot_ui| plot_ui.line(line));
         }
     });
 }

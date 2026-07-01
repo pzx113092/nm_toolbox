@@ -22,7 +22,7 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "nm_toolbox",
         native_options,
-        Box::new(|_| Ok(Box::new(nm_toolbox::App::new()))),
+        Box::new(|cc| Ok(Box::new(nm_toolbox::App::new(cc)))),
     )
 }
 
@@ -52,7 +52,7 @@ fn main() {
             .start(
                 canvas,
                 web_options,
-                Box::new(|_| Ok(Box::new(nm_toolbox::App::new()))),
+                Box::new(|cc| Ok(Box::new(nm_toolbox::App::new(cc)))),
             )
             .await;
 
