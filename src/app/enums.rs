@@ -1,20 +1,12 @@
 use std::time::Duration;
 
+#[derive(serde::Deserialize, serde::Serialize)]
 pub enum TimeID {
     Calibration,
     Target,
 }
 
-impl TimeID {
-    pub fn display(&self) -> &str {
-        match self {
-            Self::Calibration => "Cal",
-            Self::Target => "Target",
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
+#[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq, Eq)]
 pub enum Unit {
     MegaBq,
     GigaBq,
@@ -42,7 +34,7 @@ impl Unit {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq, Eq)]
 pub enum Isotope {
     Tc99m,
     I131,

@@ -1,10 +1,12 @@
 mod enums;
 use egui::{CornerRadius, Margin};
-use egui_plot::{Line, Plot, PlotPoints};
+use egui_plot::{Line, PlotPoints};
 use enums::{Isotope, Unit};
 
 use crate::app::enums::TimeID;
 
+#[derive(serde::Deserialize, serde::Serialize)]
+#[serde(default)]
 pub struct App {
     // Converter
     style: bool,
@@ -20,7 +22,7 @@ pub struct App {
     tooltip_until: Option<f64>,
     cal_time: (i8, i8, i8),
     target_time: (i8, i8, i8),
-    time_area_state: (bool, bool),
+    zoom_factor: f32,
 }
 
 impl Default for App {
@@ -41,24 +43,38 @@ impl Default for App {
             target_date: cal_date,
             tooltip_text: None,
             tooltip_until: None,
-            time_area_state: (false, false),
             cal_time: time,
             target_time: time,
+            zoom_factor: 1.3,
         }
     }
 }
 
 impl App {
     /// Called once before the first frame.
-    pub fn new() -> Self {
-        Default::default()
+    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+        // This is also where you can customize the look and feel of egui using
+        // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
+        set_text_sizes(&cc.egui_ctx);
+        cc.egui_ctx.set_zoom_factor(1.3);
+
+        if let Some(storage) = cc.storage {
+            eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default()
+        } else {
+            Default::default()
+        }
     }
 }
 
 impl eframe::App for App {
+    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        eframe::set_value(storage, eframe::APP_KEY, self);
+    }
+
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let visuals = ui.ctx().global_style().visuals.clone();
         let s = ui.ctx().clone();
+        ui.set_zoom_factor(self.zoom_factor);
 
         if !self.style {
             set_text_sizes(ui);
@@ -76,12 +92,19 @@ impl eframe::App for App {
             egui::MenuBar::new().ui(ui, |ui| {
                 egui::widgets::global_theme_preference_switch(ui);
                 ui.add(egui::Separator::default().vertical());
-                if ui.button("🔧 Settings").clicked() {
+                if ui.button("🔧").clicked() {
                     self.settings = true;
                 }
                 ui.add(egui::Separator::default().vertical());
                 if ui.button("⟲ Reset").clicked() {
                     *self = Self::default();
+                }
+                ui.add(egui::Separator::default().vertical());
+                if ui.button("➖").clicked() {
+                    self.zoom_factor -= 0.1;
+                }
+                if ui.button("➕").clicked() {
+                    self.zoom_factor += 0.1;
                 }
             });
         });
@@ -296,19 +319,6 @@ fn isotope_info(app: &mut App, ui: &mut egui::Ui) {
                         ui.add(egui::Label::new(text));
                     });
             }
-        } else {
-            let line = Line::new("activity", PlotPoints::default());
-            Plot::new("Activity_plot")
-                .allow_drag(false)
-                .allow_scroll(false)
-                .allow_zoom(false)
-                .allow_axis_zoom_drag(false)
-                .width(ui.available_width())
-                .view_aspect(2.0)
-                .show_grid(false)
-                .x_axis_label("[s]")
-                .y_axis_label(format!("[{}]", app.unit.display()))
-                .show(ui, |plot_ui| plot_ui.line(line));
         }
     });
 }
@@ -415,79 +425,39 @@ fn activity_left(n0: f32, hl: f32, t: f32) -> f32 {
 }
 
 fn time_picker(ui: &mut egui::Ui, app: &mut App, id: &TimeID) {
-    let time = match id {
-        TimeID::Calibration => &mut app.cal_time,
-        TimeID::Target => &mut app.target_time,
-    };
+    ui.horizontal(|ui| {
+        ui.add_space(10.0);
+        ui.add(
+            egui::DragValue::new(match id {
+                TimeID::Calibration => &mut app.cal_time.0,
+                TimeID::Target => &mut app.target_time.0,
+            })
+            .range(0..=23)
+            .custom_formatter(|n, _| {
+                let n = n as i8;
+                format!("{n:02}")
+            }),
+        );
 
-    let hm_time = format!("{}:{}", &time.0, &time.1);
+        ui.add(
+            egui::DragValue::new(match id {
+                TimeID::Calibration => &mut app.cal_time.1,
+                TimeID::Target => &mut app.target_time.1,
+            })
+            .range(0..=59)
+            .custom_formatter(|n, _| {
+                let n = n as i8;
+                format!(" {n:02} ")
+            }),
+        );
 
-    if ui.button(&hm_time).clicked() {
-        match id {
-            TimeID::Calibration => app.time_area_state.0 = true,
-            TimeID::Target => app.time_area_state.1 = true,
-        }
-    }
-
-    let mut open = match id {
-        TimeID::Calibration => app.time_area_state.0,
-        TimeID::Target => app.time_area_state.1,
-    };
-
-    egui::Window::new(id.display())
-        .open(&mut open)
-        .default_pos(ui.pointer_latest_pos().unwrap_or_default())
-        .title_bar(false)
-        .movable(true)
-        .drag_area(egui::WindowDrag::Anywhere)
-        .resizable(false)
-        .show(ui, |ui| {
-            ui.horizontal(|ui| {
-                ui.add(
-                    egui::DragValue::new(match id {
-                        TimeID::Calibration => &mut app.cal_time.0,
-                        TimeID::Target => &mut app.target_time.0,
-                    })
-                    .range(0..=23)
-                    .custom_formatter(|n, _| {
-                        let n = n as i8;
-                        format!("{n:02}")
-                    }),
-                );
-
-                ui.label(":");
-                ui.add(
-                    egui::DragValue::new(match id {
-                        TimeID::Calibration => &mut app.cal_time.1,
-                        TimeID::Target => &mut app.target_time.1,
-                    })
-                    .range(0..=59)
-                    .custom_formatter(|n, _| {
-                        let n = n as i8;
-                        format!(" {n:02} ")
-                    }),
-                );
-                if ui.button(" Now ").clicked() {
-                    if matches!(id, TimeID::Calibration) {
-                        app.cal_time = t_now();
-                        app.time_area_state.0 = false;
-                    } else {
-                        app.target_time = t_now();
-                        app.time_area_state.1 = false;
-                    }
-                }
-            });
-
-            if ui.button(" Ok ").clicked() {
-                if matches!(id, TimeID::Calibration) {
-                    app.cal_time.2 = 0;
-                    app.time_area_state.0 = false;
-                } else {
-                    app.target_time.2 = 0;
-                    app.time_area_state.1 = false;
-                }
+        if ui.button("Now").clicked() {
+            match id {
+                TimeID::Calibration => app.cal_time = t_now(),
+                TimeID::Target => app.target_time = t_now(),
             }
-        });
+        }
+    });
 }
 
 fn t_now() -> (i8, i8, i8) {
