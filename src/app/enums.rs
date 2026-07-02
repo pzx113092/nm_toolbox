@@ -1,6 +1,16 @@
 use std::time::Duration;
 
-#[derive(serde::Deserialize, serde::Serialize)]
+use jiff::fmt::strtime::Display;
+
+#[derive(PartialEq, serde::Deserialize, serde::Serialize)]
+pub enum WidgetSelection {
+    Calculator,
+    Converter,
+    Info,
+    NONE,
+}
+
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub enum TimeID {
     Calibration,
     Target,

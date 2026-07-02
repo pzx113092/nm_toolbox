@@ -1,9 +1,58 @@
+mod calculator;
+mod converter;
 mod enums;
+use std::default;
+
 use egui::{CornerRadius, Margin};
 use egui_plot::{Line, PlotPoints};
 use enums::{Isotope, Unit};
 
-use crate::app::enums::TimeID;
+use crate::app::{
+    calculator::Calculator,
+    converter::Converter,
+    enums::{TimeID, WidgetSelection},
+};
+
+#[derive(serde::Deserialize, serde::Serialize)]
+pub struct WidgetOpen {
+    calculator: bool,
+    converter: bool,
+    info: bool,
+
+    calc: Calculator,
+    conv: Converter,
+}
+impl Default for WidgetOpen {
+    fn default() -> Self {
+        Self {
+            calculator: false,
+            converter: false,
+            info: false,
+            calc: Calculator::default(),
+            conv: Converter::default(),
+        }
+    }
+}
+
+impl WidgetOpen {
+    fn swap(&mut self, selection: &WidgetSelection) {
+        let (calculator, converter, info) = match selection {
+            WidgetSelection::Calculator => (true, false, false),
+            WidgetSelection::Converter => (false, true, false),
+            WidgetSelection::Info => (false, false, true),
+            _ => (false, false, false),
+        };
+
+        self.calculator = calculator;
+        self.converter = converter;
+        self.info = info;
+    }
+
+    fn show_all(&mut self, ui: &mut egui::Ui) {
+        self.calc.show(ui, &mut self.calculator);
+        self.conv.show(ui, &mut self.converter);
+    }
+}
 
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)]
@@ -20,9 +69,14 @@ pub struct App {
     target_date: jiff::civil::Date,
     tooltip_text: Option<String>,
     tooltip_until: Option<f64>,
-    cal_time: (i8, i8, i8),
-    target_time: (i8, i8, i8),
+    // cal_time: (i8, i8, i8),
+    // target_time: (i8, i8, i8),
     zoom_factor: f32,
+    calculator: Calculator,
+    calc_open: bool,
+
+    widget_open: WidgetOpen,
+    widget_selection: WidgetSelection,
 }
 
 impl Default for App {
@@ -31,7 +85,7 @@ impl Default for App {
         let conv_input = 0.0;
         let isotope = Isotope::Tc99m;
         let cal_date = jiff::Zoned::now().date();
-        let time = t_now();
+        //let time = t_now();
 
         Self {
             style: false,
@@ -43,9 +97,13 @@ impl Default for App {
             target_date: cal_date,
             tooltip_text: None,
             tooltip_until: None,
-            cal_time: time,
-            target_time: time,
+            // cal_time: time,
+            // target_time: time,
             zoom_factor: 1.3,
+            calculator: Calculator::default(),
+            calc_open: false,
+            widget_open: WidgetOpen::default(),
+            widget_selection: WidgetSelection::NONE,
         }
     }
 }
@@ -110,27 +168,21 @@ impl eframe::App for App {
         });
 
         egui::CentralPanel::default().show(ui, |ui| {
-            ui.with_layout(
-                egui::Layout::top_down(egui::Align::Center).with_cross_align(egui::Align::Center),
-                |ui| {
-                    egui::ScrollArea::both()
-                        .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysHidden)
-                        .max_width(600.0)
-                        .show(ui, |ui| {
-                            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                                app_frame(&visuals).show(ui, |ui| {
-                                    calculator(self, ui);
-                                });
-                                app_frame(&visuals).show(ui, |ui| {
-                                    converter(self, ui);
-                                });
-                                app_frame(&visuals).show(ui, |ui| {
-                                    isotope_info(self, ui);
-                                });
-                            });
-                        });
-                },
-            );
+            ui.horizontal(|ui| {
+                ui.radio_value(
+                    &mut self.widget_selection,
+                    WidgetSelection::Calculator,
+                    "Calculator",
+                );
+                ui.radio_value(
+                    &mut self.widget_selection,
+                    WidgetSelection::Converter,
+                    "Converter",
+                );
+                ui.radio_value(&mut self.widget_selection, WidgetSelection::Info, "Info");
+            });
+            self.widget_open.swap(&self.widget_selection);
+            self.widget_open.show_all(ui);
         });
     }
 }
@@ -234,7 +286,7 @@ fn isotope_info(app: &mut App, ui: &mut egui::Ui) {
             .striped(true)
             .show(ui, |ui| {
                 ui.vertical_centered_justified(|ui| {
-                    isotope_combo(app, ui, "first");
+                    //isotope_combo(app, ui, "first");
                 });
                 ui.end_row();
                 ui.separator();
@@ -323,84 +375,84 @@ fn isotope_info(app: &mut App, ui: &mut egui::Ui) {
     });
 }
 
-fn calculator(app: &mut App, ui: &mut egui::Ui) {
-    ui.label(egui::RichText::new("Activity calculator").heading());
-    ui.vertical_centered(|ui| {
-        egui::Grid::new("activity_calculator")
-            .num_columns(2)
-            .spacing([8.0, 10.0])
-            .striped(true)
-            .show(ui, |ui| {
-                ui.vertical_centered_justified(|ui| {
-                    isotope_combo(app, ui, "second");
-                });
-                ui.end_row();
+// fn calculator(app: &mut App, ui: &mut egui::Ui) {
+//     ui.label(egui::RichText::new("Activity calculator").heading());
+//     ui.vertical_centered(|ui| {
+//         egui::Grid::new("activity_calculator")
+//             .num_columns(2)
+//             .spacing([8.0, 10.0])
+//             .striped(true)
+//             .show(ui, |ui| {
+//                 ui.vertical_centered_justified(|ui| {
+//                     isotope_combo(app, ui, "second");
+//                 });
+//                 ui.end_row();
 
-                ui.separator();
-                ui.separator();
-                ui.end_row();
+//                 ui.separator();
+//                 ui.separator();
+//                 ui.end_row();
 
-                ui.label("Activity:");
-                ui.add(
-                    egui::DragValue::new(&mut app.conv_input)
-                        .range(0.0..=1000000.0)
-                        .max_decimals(4),
-                );
-                ui.end_row();
+//                 ui.label("Activity:");
+//                 ui.add(
+//                     egui::DragValue::new(&mut app.conv_input)
+//                         .range(0.0..=1000000.0)
+//                         .max_decimals(4),
+//                 );
+//                 ui.end_row();
 
-                ui.label("Initial: ");
-                ui.with_layout(egui::Layout::left_to_right(egui::Align::LEFT), |ui| {
-                    ui.add(
-                        egui_extras::DatePickerButton::new(&mut app.cal_date)
-                            .id_salt("cal_datepicker")
-                            .format("%d-%m-%y")
-                            .show_icon(false),
-                    );
+//                 ui.label("Initial: ");
+//                 ui.with_layout(egui::Layout::left_to_right(egui::Align::LEFT), |ui| {
+//                     ui.add(
+//                         egui_extras::DatePickerButton::new(&mut app.cal_date)
+//                             .id_salt("cal_datepicker")
+//                             .format("%d-%m-%y")
+//                             .show_icon(false),
+//                     );
 
-                    time_picker(ui, app, &TimeID::Calibration);
-                });
+//                     time_picker(ui, app, &TimeID::Calibration);
+//                 });
 
-                ui.end_row();
+//                 ui.end_row();
 
-                ui.label("Target:");
-                ui.with_layout(egui::Layout::left_to_right(egui::Align::LEFT), |ui| {
-                    ui.add(
-                        egui_extras::DatePickerButton::new(&mut app.target_date)
-                            .id_salt("tar_datepicker")
-                            .format("%d-%m-%y")
-                            .show_icon(false),
-                    );
-                    time_picker(ui, app, &TimeID::Target);
-                });
+//                 ui.label("Target:");
+//                 ui.with_layout(egui::Layout::left_to_right(egui::Align::LEFT), |ui| {
+//                     ui.add(
+//                         egui_extras::DatePickerButton::new(&mut app.target_date)
+//                             .id_salt("tar_datepicker")
+//                             .format("%d-%m-%y")
+//                             .show_icon(false),
+//                     );
+//                     time_picker(ui, app, &TimeID::Target);
+//                 });
 
-                ui.end_row();
-                ui.label("Result:");
-                let cal_t = jiff::civil::time(app.cal_time.0, app.cal_time.1, app.cal_time.2, 0);
-                let tar_t =
-                    jiff::civil::time(app.target_time.0, app.target_time.1, app.target_time.2, 0);
-                let span = app.target_date.to_datetime(tar_t) - app.cal_date.to_datetime(cal_t);
-                let span_f = span.total(jiff::Unit::Second).unwrap_or(0.0);
-                ui.label(format!(
-                    "{:.4}",
-                    activity_left(
-                        app.conv_input,
-                        app.isotope.hl().as_secs_f32(),
-                        span_f as f32
-                    )
-                ));
-            });
-    });
-}
+//                 ui.end_row();
+//                 ui.label("Result:");
+//                 let cal_t = jiff::civil::time(app.cal_time.0, app.cal_time.1, app.cal_time.2, 0);
+//                 let tar_t =
+//                     jiff::civil::time(app.target_time.0, app.target_time.1, app.target_time.2, 0);
+//                 let span = app.target_date.to_datetime(tar_t) - app.cal_date.to_datetime(cal_t);
+//                 let span_f = span.total(jiff::Unit::Second).unwrap_or(0.0);
+//                 ui.label(format!(
+//                     "{:.4}",
+//                     activity_left(
+//                         app.conv_input,
+//                         app.isotope.hl().as_secs_f32(),
+//                         span_f as f32
+//                     )
+//                 ));
+//             });
+//     });
+// }
 
-fn isotope_combo(app: &mut App, ui: &mut egui::Ui, name: &str) {
+fn isotope_combo(isotope: &mut Isotope, ui: &mut egui::Ui, name: &'static str) {
     egui::ComboBox::from_id_salt(name)
-        .selected_text(app.isotope.display())
+        .selected_text(isotope.display())
         .width(20.0)
         .show_ui(ui, |ui| {
-            ui.selectable_value(&mut app.isotope, Isotope::Tc99m, Isotope::Tc99m.display());
-            ui.selectable_value(&mut app.isotope, Isotope::I131, Isotope::I131.display());
-            ui.selectable_value(&mut app.isotope, Isotope::I123, Isotope::I123.display());
-            ui.selectable_value(&mut app.isotope, Isotope::Lu177, Isotope::Lu177.display());
+            ui.selectable_value(isotope, Isotope::Tc99m, Isotope::Tc99m.display());
+            ui.selectable_value(isotope, Isotope::I131, Isotope::I131.display());
+            ui.selectable_value(isotope, Isotope::I123, Isotope::I123.display());
+            ui.selectable_value(isotope, Isotope::Lu177, Isotope::Lu177.display());
         });
 }
 // duration in seconds
@@ -424,43 +476,43 @@ fn activity_left(n0: f32, hl: f32, t: f32) -> f32 {
     }
 }
 
-fn time_picker(ui: &mut egui::Ui, app: &mut App, id: &TimeID) {
-    ui.horizontal(|ui| {
-        ui.add_space(10.0);
-        ui.add(
-            egui::DragValue::new(match id {
-                TimeID::Calibration => &mut app.cal_time.0,
-                TimeID::Target => &mut app.target_time.0,
-            })
-            .range(0..=23)
-            .custom_formatter(|n, _| {
-                let n = n as i8;
-                format!("{n:02}")
-            }),
-        );
+// fn time_picker(ui: &mut egui::Ui, app: &mut App, id: &TimeID) {
+//     ui.horizontal(|ui| {
+//         ui.add_space(10.0);
+//         ui.add(
+//             egui::DragValue::new(match id {
+//                 TimeID::Calibration => &mut app.cal_time.0,
+//                 TimeID::Target => &mut app.target_time.0,
+//             })
+//             .range(0..=23)
+//             .custom_formatter(|n, _| {
+//                 let n = n as i8;
+//                 format!("{n:02}")
+//             }),
+//         );
 
-        ui.add(
-            egui::DragValue::new(match id {
-                TimeID::Calibration => &mut app.cal_time.1,
-                TimeID::Target => &mut app.target_time.1,
-            })
-            .range(0..=59)
-            .custom_formatter(|n, _| {
-                let n = n as i8;
-                format!(" {n:02} ")
-            }),
-        );
+//         ui.add(
+//             egui::DragValue::new(match id {
+//                 TimeID::Calibration => &mut app.cal_time.1,
+//                 TimeID::Target => &mut app.target_time.1,
+//             })
+//             .range(0..=59)
+//             .custom_formatter(|n, _| {
+//                 let n = n as i8;
+//                 format!(" {n:02} ")
+//             }),
+//         );
 
-        if ui.button("Now").clicked() {
-            match id {
-                TimeID::Calibration => app.cal_time = t_now(),
-                TimeID::Target => app.target_time = t_now(),
-            }
-        }
-    });
-}
+//         if ui.button("Now").clicked() {
+//             match id {
+//                 TimeID::Calibration => app.cal_time = t_now(),
+//                 TimeID::Target => app.target_time = t_now(),
+//             }
+//         }
+//     });
+// }
 
-fn t_now() -> (i8, i8, i8) {
-    let now = jiff::Zoned::now();
-    (now.hour(), now.minute(), now.second())
-}
+// fn t_now() -> (i8, i8, i8) {
+//     let now = jiff::Zoned::now();
+//     (now.hour(), now.minute(), now.second())
+// }
