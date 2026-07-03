@@ -1,4 +1,4 @@
-use crate::app::Isotope;
+use crate::app::enums::Isotope;
 
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct Calculator {
@@ -45,9 +45,9 @@ impl Calculator {
             .open(open)
             .resizable(false)
             .constrain_to(ui.available_rect_before_wrap())
-            .auto_sized()
             .title_bar(false)
             .movable(false)
+            .anchor(egui::Align2::LEFT_TOP, egui::Vec2::ZERO)
             .show(ui, |ui| {
                 crate::app::isotope_combo(&mut self.isotope, ui, "second");
 
@@ -59,7 +59,11 @@ impl Calculator {
                             grid(self, ui, &TimeID::Calibration);
                         });
 
-                    ui.label("⬇️⬇️⬇️");
+                    let w = ui.available_width() / 2.0;
+
+                    ui.vertical_centered(|ui| {
+                        ui.label("⬇️⬇️⬇️⬇️⬇️⬇️");
+                    });
 
                     egui::Frame::new()
                         .inner_margin(egui::Margin::same(10))
@@ -68,71 +72,6 @@ impl Calculator {
                             grid(self, ui, &TimeID::Target);
                         });
                 });
-
-                //ui.heading("Activity calculator");
-                //     egui::Grid::new("activity_calculator")
-                //         .num_columns(2)
-                //         .spacing([8.0, 10.0])
-                //         .striped(true)
-                //         .show(ui, |ui| {
-                //             ui.vertical_centered_justified(|ui| {
-                //                 crate::app::isotope_combo(&mut self.isotope, ui, "second");
-                //             });
-                //             ui.end_row();
-
-                //             // ui.separator();
-                //             // ui.separator();
-                //             // ui.end_row();
-
-                //             ui.label("Activity:");
-                //             ui.add(
-                //                 egui::DragValue::new(&mut self.input)
-                //                     .range(0.0..=1000000.0)
-                //                     .max_decimals(4),
-                //             );
-                //             ui.end_row();
-
-                //             ui.label("Initial: ");
-                //             ui.with_layout(egui::Layout::left_to_right(egui::Align::LEFT), |ui| {
-                //                 ui.add(
-                //                     egui_extras::DatePickerButton::new(&mut self.cal_date)
-                //                         .id_salt("cal_datepicker")
-                //                         .format("%d-%m-%y")
-                //                         .show_icon(false),
-                //                 );
-
-                //                 time_picker(ui, self, &TimeID::Calibration);
-                //             });
-
-                //             ui.end_row();
-
-                //             ui.label("Target:");
-                //             ui.with_layout(egui::Layout::left_to_right(egui::Align::LEFT), |ui| {
-                //                 ui.add(
-                //                     egui_extras::DatePickerButton::new(&mut self.target_date)
-                //                         .id_salt("tar_datepicker")
-                //                         .format("%d-%m-%y")
-                //                         .show_icon(false),
-                //                 );
-                //                 time_picker(ui, self, &TimeID::Target);
-                //             });
-
-                //             ui.end_row();
-                //             ui.label("Result:");
-                //             let cal_t = jiff::civil::time(self.cal_time.0, self.cal_time.1, self.cal_time.2, 0);
-                //             let tar_t =
-                //                 jiff::civil::time(self.target_time.0, self.target_time.1, self.target_time.2, 0);
-                //             let span = self.target_date.to_datetime(tar_t) - self.cal_date.to_datetime(cal_t);
-                //             let span_f = span.total(jiff::Unit::Second).unwrap_or(0.0);
-                //             ui.label(format!(
-                //                 "{:.4}",
-                //                 crate::app::activity_left(
-                //                     self.input,
-                //                     self.isotope.hl().as_secs_f32(),
-                //                     span_f as f32
-                //                 )
-                //             ));
-                //         });
             });
     }
 }

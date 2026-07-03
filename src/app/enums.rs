@@ -1,7 +1,5 @@
 use std::time::Duration;
 
-use jiff::fmt::strtime::Display;
-
 #[derive(PartialEq, serde::Deserialize, serde::Serialize)]
 pub enum WidgetSelection {
     Calculator,
@@ -50,15 +48,27 @@ pub enum Isotope {
     I131,
     I123,
     Lu177,
+    Ra223,
 }
 
 impl Isotope {
+    pub fn energy(&self) -> &'static str {
+        match self {
+            Self::Tc99m => "γ: 140.5 keV",
+            Self::I131 => "β-: 606 keV\nγ: 364.4 keV: ",
+            Self::I123 => "β-: 1.228 MeV (electron capture)\nγ: 159.0 keV",
+            Self::Lu177 => "β-: 496.8 keV\nγ: 321.3 keV",
+            Self::Ra223 => "α: ~5.7 MeV",
+        }
+    }
+
     pub fn hl(&self) -> Duration {
         match self {
-            Self::Tc99m => Duration::from_secs_f32(21624.76),
-            Self::I131 => Duration::from_secs_f32(692928.0),
+            Self::Tc99m => Duration::from_secs_f32(21625.92),
+            Self::I131 => Duration::from_secs_f32(693377.28),
             Self::I123 => Duration::from_secs_f32(47602.8),
-            Self::Lu177 => Duration::from_secs_f32(578880.0),
+            Self::Lu177 => Duration::from_secs_f32(574067.52),
+            Self::Ra223 => Duration::from_secs_f32(988122.24),
         }
     }
 
@@ -71,6 +81,7 @@ impl Isotope {
             Self::I131 => ("131", "I"),
             Self::I123 => ("123", "I"),
             Self::Lu177 => ("177", "Lu"),
+            Self::Ra223 => ("223", "Ra"),
         };
 
         egui::RichText::new(tx.0)

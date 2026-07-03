@@ -22,9 +22,9 @@ impl Converter {
             .open(open)
             .resizable(false)
             .constrain_to(ui.available_rect_before_wrap())
-            .auto_sized()
             .title_bar(false)
             .movable(false)
+            .anchor(egui::Align2::LEFT_TOP, egui::Vec2::ZERO)
             .show(ui, |ui| {
                 ui.vertical_centered(|ui| {
                     //ui.heading("Unit converter");
@@ -74,10 +74,6 @@ impl Converter {
                                     );
 
                                     ui.end_row();
-
-                                    // ui.separator();
-                                    // ui.separator();
-                                    // ui.end_row();
 
                                     ui.label("MBq");
                                     ui.label(format!(
