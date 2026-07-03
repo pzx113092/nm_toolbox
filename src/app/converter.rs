@@ -17,7 +17,7 @@ impl Default for Converter {
 }
 
 impl Converter {
-    pub fn show(&mut self, ui: &mut egui::Ui, open: &mut bool) {
+    pub fn show(&mut self, ui: &egui::Ui, open: &mut bool) {
         egui::Window::new("Unit converter")
             .open(open)
             .resizable(false)

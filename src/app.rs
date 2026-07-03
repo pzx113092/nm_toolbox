@@ -12,7 +12,7 @@ use crate::app::{
     info::Info,
 };
 
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(serde::Deserialize, serde::Serialize, Default)]
 pub struct WidgetOpen {
     calculator: bool,
     converter: bool,
@@ -23,26 +23,13 @@ pub struct WidgetOpen {
     info_w: Info,
 }
 
-impl Default for WidgetOpen {
-    fn default() -> Self {
-        Self {
-            calculator: false,
-            converter: false,
-            information: false,
-            calc_w: Calculator::default(),
-            conv_w: Converter::default(),
-            info_w: Info::default(),
-        }
-    }
-}
-
 impl WidgetOpen {
     fn swap(&mut self, selection: &WidgetSelection) {
         let (calculator, converter, information) = match selection {
             WidgetSelection::Calculator => (true, false, false),
             WidgetSelection::Converter => (false, true, false),
             WidgetSelection::Info => (false, false, true),
-            _ => (false, false, false),
+            WidgetSelection::None => (false, false, false),
         };
 
         self.calculator = calculator;
@@ -50,7 +37,7 @@ impl WidgetOpen {
         self.information = information;
     }
 
-    fn show_all(&mut self, ui: &mut egui::Ui) {
+    fn show_all(&mut self, ui: &egui::Ui) {
         self.calc_w.show(ui, &mut self.calculator);
         self.conv_w.show(ui, &mut self.converter);
         self.info_w.show(ui, &mut self.information);
@@ -76,7 +63,7 @@ impl Default for App {
             settings: false,
             zoom_factor: 1.0,
             widget_open: WidgetOpen::default(),
-            widget_selection: WidgetSelection::NONE,
+            widget_selection: WidgetSelection::None,
         }
     }
 }

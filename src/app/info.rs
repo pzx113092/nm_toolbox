@@ -14,7 +14,7 @@ impl Default for Info {
 }
 
 impl Info {
-    pub fn show(&mut self, ui: &mut egui::Ui, open: &mut bool) {
+    pub fn show(&mut self, ui: &egui::Ui, open: &mut bool) {
         egui::Window::new("Info")
             .open(open)
             .resizable(false)

@@ -26,7 +26,7 @@ impl Default for Calculator {
 }
 
 impl Calculator {
-    pub fn calculate(&mut self) -> f32 {
+    pub fn calculate(&self) -> f32 {
         let cal_t = jiff::civil::time(self.cal_time.0, self.cal_time.1, self.cal_time.2, 0);
         let tar_t = jiff::civil::time(
             self.target_time.0,
@@ -40,7 +40,7 @@ impl Calculator {
         crate::app::activity_left(self.input, self.isotope.hl().as_secs_f32(), span_f as f32)
     }
 
-    pub fn show(&mut self, ui: &mut egui::Ui, open: &mut bool) {
+    pub fn show(&mut self, ui: &egui::Ui, open: &mut bool) {
         egui::Window::new("Acivity calculator")
             .open(open)
             .resizable(false)
@@ -59,7 +59,7 @@ impl Calculator {
                             grid(self, ui, &TimeID::Calibration);
                         });
 
-                    let w = ui.available_width() / 2.0;
+                    let _w = ui.available_width() / 2.0;
 
                     ui.vertical_centered(|ui| {
                         ui.label("⬇️⬇️⬇️⬇️⬇️⬇️");
@@ -77,7 +77,7 @@ impl Calculator {
 }
 
 fn grid(calc: &mut Calculator, ui: &mut egui::Ui, id: &TimeID) {
-    egui::Grid::new(format!("{:?}", id))
+    egui::Grid::new(format!("{id:?}"))
         .num_columns(2)
         .spacing([8.0, 10.0])
         .striped(true)

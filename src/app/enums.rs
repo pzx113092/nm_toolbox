@@ -1,11 +1,11 @@
 use std::time::Duration;
 
-#[derive(PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 pub enum WidgetSelection {
     Calculator,
     Converter,
     Info,
-    NONE,
+    None,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
@@ -67,7 +67,7 @@ impl Isotope {
             Self::Tc99m => Duration::from_secs_f32(21625.92),
             Self::I131 => Duration::from_secs_f32(693377.28),
             Self::I123 => Duration::from_secs_f32(47602.8),
-            Self::Lu177 => Duration::from_secs_f32(574067.52),
+            Self::Lu177 => Duration::from_secs_f32(574_067.5),
             Self::Ra223 => Duration::from_secs_f32(988122.24),
         }
     }
