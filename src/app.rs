@@ -175,13 +175,14 @@ fn isotope_combo(isotope: &mut Isotope, ui: &mut egui::Ui, name: &'static str) {
             ui.selectable_value(isotope, Isotope::I123, Isotope::I123.display());
             ui.selectable_value(isotope, Isotope::Lu177, Isotope::Lu177.display());
             ui.selectable_value(isotope, Isotope::Ra223, Isotope::Ra223.display());
+            ui.selectable_value(isotope, Isotope::Cs137, Isotope::Cs137.display());
         });
 }
 // duration in seconds
 
-fn activity_left(n0: f32, hl: f32, t: f32) -> f32 {
+fn activity_left(n0: f64, hl: f64, t: f64) -> f64 {
     if hl != 0.0 {
-        n0 * f32::powf(0.5, t / hl)
+        n0 * f64::powf(0.5, t / hl)
     } else {
         0.0
     }

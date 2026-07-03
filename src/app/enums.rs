@@ -49,6 +49,7 @@ pub enum Isotope {
     I123,
     Lu177,
     Ra223,
+    Cs137,
 }
 
 impl Isotope {
@@ -59,16 +60,18 @@ impl Isotope {
             Self::I123 => "β-: 1.228 MeV (electron capture)\nγ: 159.0 keV",
             Self::Lu177 => "β-: 496.8 keV\nγ: 321.3 keV",
             Self::Ra223 => "α: ~5.7 MeV",
+            _ => "",
         }
     }
 
     pub fn hl(&self) -> Duration {
         match self {
-            Self::Tc99m => Duration::from_secs_f32(21625.92),
-            Self::I131 => Duration::from_secs_f32(693377.28),
-            Self::I123 => Duration::from_secs_f32(47602.8),
-            Self::Lu177 => Duration::from_secs_f32(574_067.5),
-            Self::Ra223 => Duration::from_secs_f32(988122.24),
+            Self::Tc99m => Duration::from_secs_f64(21625.92),
+            Self::I131 => Duration::from_secs_f64(693377.28),
+            Self::I123 => Duration::from_secs_f64(47602.8),
+            Self::Lu177 => Duration::from_secs_f64(574067.5),
+            Self::Ra223 => Duration::from_secs_f64(988122.24),
+            Self::Cs137 => Duration::from_secs_f64(949232333.0),
         }
     }
 
@@ -82,6 +85,7 @@ impl Isotope {
             Self::I123 => ("123", "I"),
             Self::Lu177 => ("177", "Lu"),
             Self::Ra223 => ("223", "Ra"),
+            Self::Cs137 => ("137", "Cs"),
         };
 
         egui::RichText::new(tx.0)
