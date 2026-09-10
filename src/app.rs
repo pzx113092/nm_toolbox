@@ -3,6 +3,7 @@ mod converter;
 mod enums;
 mod info;
 
+use egui::SliderOrientation::Horizontal;
 use enums::Isotope;
 
 use crate::app::{
@@ -185,4 +186,73 @@ fn activity_left(n0: f32, hl: f32, t: f32) -> f32 {
     } else {
         0.0
     }
+}
+
+fn onscreen_keyboard(ui: &mut egui::Ui) {
+    egui::Modal::new(egui::Id::from("modal")).show(ui.ctx(), |ui| {
+        
+        ui.label("placeholder");
+        ui.separator();
+        ui.vertical(|ui|{
+            egui::Grid::new("numeric_keyboard").striped(false).min_row_height(52.0).show(ui, |ui|{
+                if ui.add(egui::Button::new("7").min_size(egui::Vec2::new(50.0, 50.0))).clicked() {
+
+                };
+                if ui.add(egui::Button::new("8").min_size(egui::Vec2::new(50.0, 50.0))).clicked() {
+
+                };
+                if ui.add(egui::Button::new("9").min_size(egui::Vec2::new(50.0, 50.0))).clicked() {
+                };
+                
+
+                ui.end_row();
+
+                if ui.add(egui::Button::new("4").min_size(egui::Vec2::new(50.0, 50.0))).clicked() {
+
+                };
+                if ui.add(egui::Button::new("5").min_size(egui::Vec2::new(50.0, 50.0))).clicked() {
+
+                };
+                if ui.add(egui::Button::new("6").min_size(egui::Vec2::new(50.0, 50.0))).clicked() {
+
+                };
+
+                ui.end_row();
+
+                if ui.add(egui::Button::new("1").min_size(egui::Vec2::new(50.0, 50.0))).clicked() {
+
+                };
+                if ui.add(egui::Button::new("2").min_size(egui::Vec2::new(50.0, 50.0))).clicked() {
+
+                };
+                if ui.add(egui::Button::new("3").min_size(egui::Vec2::new(50.0, 50.0))).clicked() {
+
+                };
+
+                ui.end_row();
+                
+            });
+            ui.horizontal(|ui|{
+                if ui.add(egui::Button::new("0").min_size(egui::Vec2::new(108.0, 50.0))).clicked() {
+
+                };
+                if ui.add(egui::Button::new("⬅️").min_size(egui::Vec2::new(50.0, 50.0))).clicked() {
+
+                };
+            });
+        });
+            
+        
+        ui.separator();
+        egui::Sides::new().show(ui, |_ui| {}, |ui| {
+            if ui.button("Save").clicked() {
+                    
+                }
+
+                if ui.button("Exit").clicked() {
+                    ui.close();
+                }
+        });
+
+    });
 }
