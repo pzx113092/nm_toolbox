@@ -78,6 +78,7 @@ impl Calculator {
                         .show(ui, |ui| {
                             ui.heading("Target");
                             grid(self, ui, &TimeID::Target);
+                            onscreen_keyboard(ui);
                         });
                 });
             });
@@ -141,7 +142,7 @@ fn t_now() -> (i8, i8, i8) {
     (now.hour(), now.minute(), now.second())
 }
 
-use crate::app::TimeID;
+use crate::app::{self, TimeID, onscreen_keyboard};
 fn time_picker(ui: &mut egui::Ui, calc: &mut Calculator, id: &TimeID) {
     ui.horizontal_centered(|ui| {
         //ui.add_space(10.0);
