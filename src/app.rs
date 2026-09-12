@@ -2,8 +2,8 @@ mod calculator;
 mod converter;
 mod enums;
 mod info;
+mod keyboard;
 
-use egui::SliderOrientation::Horizontal;
 use enums::Isotope;
 
 use crate::app::{
@@ -55,6 +55,8 @@ pub struct App {
 
     widget_open: WidgetOpen,
     widget_selection: WidgetSelection,
+
+    pub on_screen_keyboard: bool,
 }
 
 impl Default for App {
@@ -65,6 +67,7 @@ impl Default for App {
             zoom_factor: 1.0,
             widget_open: WidgetOpen::default(),
             widget_selection: WidgetSelection::None,
+            on_screen_keyboard: true,
         }
     }
 }
@@ -74,6 +77,9 @@ impl App {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
+
+        replace_fonts(&cc.egui_ctx);
+
         set_text_sizes(&cc.egui_ctx);
         cc.egui_ctx.set_zoom_factor(1.3);
 
@@ -115,16 +121,25 @@ impl eframe::App for App {
                     self.settings = true;
                 }
                 ui.add(egui::Separator::default().vertical());
-                if ui.button("⟲ Reset").clicked() {
+                if ui.button("⟲ reset").clicked() {
                     *self = Self::default();
                 }
+
                 ui.add(egui::Separator::default().vertical());
+
+                ui.checkbox(&mut self.on_screen_keyboard, "touch screen");
+                ui.ctx().data_mut(|data| {
+                    data.insert_temp(egui::Id::new("kb_state"), self.on_screen_keyboard)
+                });
+                ui.add(egui::Separator::default().vertical());
+
                 if ui.button("➖").clicked() {
                     self.zoom_factor -= 0.1;
                 }
                 if ui.button("➕").clicked() {
                     self.zoom_factor += 0.1;
                 }
+                ui.add(egui::Separator::default().vertical());
             });
         });
 
@@ -146,6 +161,37 @@ impl eframe::App for App {
             self.widget_open.show_all(ui);
         });
     }
+}
+
+fn replace_fonts(ctx: &egui::Context) {
+    // Start with the default fonts (we will be adding to them rather than replacing them).
+    let mut fonts = egui::FontDefinitions::default();
+
+    // Install my own font (maybe supporting non-latin characters).
+    // .ttf and .otf files supported.
+    fonts.font_data.insert(
+        "DejavuSansMono".to_owned(),
+        std::sync::Arc::new(egui::FontData::from_static(include_bytes!(
+            "../assets/DejavuSansMono.ttf"
+        ))),
+    );
+
+    // Put my font first (highest priority) for proportional text:
+    fonts
+        .families
+        .entry(egui::FontFamily::Proportional)
+        .or_default()
+        .insert(0, "DejavuSansMono".to_owned());
+
+    // Put my font as last fallback for monospace:
+    fonts
+        .families
+        .entry(egui::FontFamily::Monospace)
+        .or_default()
+        .push("DejavuSansMono".to_owned());
+
+    // Tell egui to use these fonts:
+    ctx.set_fonts(fonts);
 }
 
 pub fn set_text_sizes(ctx: &egui::Context) {
@@ -176,6 +222,9 @@ fn isotope_combo(isotope: &mut Isotope, ui: &mut egui::Ui, name: &'static str) {
             ui.selectable_value(isotope, Isotope::I123, Isotope::I123.display());
             ui.selectable_value(isotope, Isotope::Lu177, Isotope::Lu177.display());
             ui.selectable_value(isotope, Isotope::Ra223, Isotope::Ra223.display());
+            ui.selectable_value(isotope, Isotope::F18, Isotope::F18.display());
+            ui.selectable_value(isotope, Isotope::Ga68, Isotope::Ga68.display());
+            ui.selectable_value(isotope, Isotope::Cs137, Isotope::Cs137.display());
         });
 }
 // duration in seconds
@@ -188,71 +237,9 @@ fn activity_left(n0: f32, hl: f32, t: f32) -> f32 {
     }
 }
 
-fn onscreen_keyboard(ui: &mut egui::Ui) {
-    egui::Modal::new(egui::Id::from("modal")).show(ui.ctx(), |ui| {
-        
-        ui.label("placeholder");
-        ui.separator();
-        ui.vertical(|ui|{
-            egui::Grid::new("numeric_keyboard").striped(false).min_row_height(52.0).show(ui, |ui|{
-                if ui.add(egui::Button::new("7").min_size(egui::Vec2::new(50.0, 50.0))).clicked() {
-
-                };
-                if ui.add(egui::Button::new("8").min_size(egui::Vec2::new(50.0, 50.0))).clicked() {
-
-                };
-                if ui.add(egui::Button::new("9").min_size(egui::Vec2::new(50.0, 50.0))).clicked() {
-                };
-                
-
-                ui.end_row();
-
-                if ui.add(egui::Button::new("4").min_size(egui::Vec2::new(50.0, 50.0))).clicked() {
-
-                };
-                if ui.add(egui::Button::new("5").min_size(egui::Vec2::new(50.0, 50.0))).clicked() {
-
-                };
-                if ui.add(egui::Button::new("6").min_size(egui::Vec2::new(50.0, 50.0))).clicked() {
-
-                };
-
-                ui.end_row();
-
-                if ui.add(egui::Button::new("1").min_size(egui::Vec2::new(50.0, 50.0))).clicked() {
-
-                };
-                if ui.add(egui::Button::new("2").min_size(egui::Vec2::new(50.0, 50.0))).clicked() {
-
-                };
-                if ui.add(egui::Button::new("3").min_size(egui::Vec2::new(50.0, 50.0))).clicked() {
-
-                };
-
-                ui.end_row();
-                
-            });
-            ui.horizontal(|ui|{
-                if ui.add(egui::Button::new("0").min_size(egui::Vec2::new(108.0, 50.0))).clicked() {
-
-                };
-                if ui.add(egui::Button::new("⬅️").min_size(egui::Vec2::new(50.0, 50.0))).clicked() {
-
-                };
-            });
-        });
-            
-        
-        ui.separator();
-        egui::Sides::new().show(ui, |_ui| {}, |ui| {
-            if ui.button("Save").clicked() {
-                    
-                }
-
-                if ui.button("Exit").clicked() {
-                    ui.close();
-                }
-        });
-
-    });
+pub fn is_kb_active(ui: &egui::Ui) -> bool {
+    ui.data(|data| {
+        data.get_temp::<bool>(egui::Id::new("kb_state"))
+            .unwrap_or(false)
+    })
 }

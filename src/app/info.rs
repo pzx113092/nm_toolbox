@@ -42,9 +42,6 @@ impl Info {
                                     ui.label("Full decay:");
                                     ui.label(parse_hl(half_life * 10.0));
                                     ui.end_row();
-
-                                    ui.label("Energy:");
-                                    ui.label(self.isotope.energy())
                                 });
                         });
                     });
@@ -53,7 +50,9 @@ impl Info {
 }
 
 fn parse_hl(duration: f32) -> String {
-    if duration >= 86400.0 {
+    if duration >= 3.15576e7 {
+        format!("{:.2} years", duration / 3.15576e7)
+    } else if duration >= 86400.0 {
         format!("{:.2} days", duration / 86400.0)
     } else if duration >= 7200.0 {
         format!("{:.2} hours", duration / 3600.0)
