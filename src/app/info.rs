@@ -42,9 +42,6 @@ impl Info {
                                     ui.label("Full decay:");
                                     ui.label(parse_hl(half_life * 10.0));
                                     ui.end_row();
-
-                                    ui.label("Energy:");
-                                    ui.label(self.isotope.energy())
                                 });
                         });
                     });
