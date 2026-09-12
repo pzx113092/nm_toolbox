@@ -1,18 +1,16 @@
+use std::mem;
+
 use crate::app::enums::Isotope;
 
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct Calculator {
-    input: f32,
+    input: f64,
     isotope: Isotope,
     cal_date: jiff::civil::Date,
     target_date: jiff::civil::Date,
     cal_time: (i8, i8, i8),
     target_time: (i8, i8, i8),
 
-    // kb_cal_h_input: i32,
-    // kb_cal_m_input: i32,
-    // kb_target_h_input: i32,
-    // kb_target_m_input: i32,
     kb_cal_h: app::keyboard::Keyboard,
     kb_cal_m: app::keyboard::Keyboard,
     kb_cal_h_open: bool,
@@ -80,7 +78,7 @@ impl Default for Calculator {
 }
 
 impl Calculator {
-    pub fn calculate(&self) -> f32 {
+    pub fn calculate(&self) -> f64 {
         let cal_t = jiff::civil::time(self.cal_time.0, self.cal_time.1, self.cal_time.2, 0);
         let tar_t = jiff::civil::time(
             self.target_time.0,
@@ -88,10 +86,13 @@ impl Calculator {
             self.target_time.2,
             0,
         );
-        let span = self.target_date.to_datetime(tar_t) - self.cal_date.to_datetime(cal_t);
-        let span_f = span.total(jiff::Unit::Second).unwrap_or(0.0);
 
-        crate::app::activity_left(self.input, self.isotope.hl().as_secs_f32(), span_f as f32)
+        let cal_dt = self.target_date.to_datetime(tar_t);
+        let tar_dt = self.cal_date.to_datetime(cal_t);
+
+        let seconds = duration_in_seconds(cal_dt, tar_dt);
+
+        crate::app::activity_left(self.input, self.isotope.hl().as_secs_f64(), seconds)
     }
 
     pub fn show(&mut self, ui: &egui::Ui, open: &mut bool) {
@@ -116,7 +117,10 @@ impl Calculator {
                     let _w = ui.available_width() / 2.0;
 
                     ui.vertical_centered(|ui| {
-                        ui.label("⬇️⬇️⬇️⬇️⬇️⬇️");
+                        if ui.button("🔀").clicked() {
+                            mem::swap(&mut self.cal_time, &mut self.target_time);
+                            mem::swap(&mut self.cal_date, &mut self.target_date);
+                        }
                     });
 
                     egui::Frame::new()
@@ -158,19 +162,28 @@ fn grid(calc: &mut Calculator, ui: &mut egui::Ui, id: &TimeID) {
         .min_col_width(100.0)
         .show(ui, |ui| {
             ui.label("Date");
-            ui.add(
-                egui_extras::DatePickerButton::new(match id {
-                    TimeID::Calibration => &mut calc.cal_date,
-                    TimeID::Target => &mut calc.target_date,
-                })
-                .id_salt(match id {
-                    TimeID::Calibration => "time_picker_cal",
-                    TimeID::Target => "time_picker_target",
-                })
-                .format("%d-%m-%y")
-                .show_icon(false)
-                .arrows(false),
-            );
+            ui.horizontal(|ui| {
+                ui.add(
+                    egui_extras::DatePickerButton::new(match id {
+                        TimeID::Calibration => &mut calc.cal_date,
+                        TimeID::Target => &mut calc.target_date,
+                    })
+                    .id_salt(match id {
+                        TimeID::Calibration => "time_picker_cal",
+                        TimeID::Target => "time_picker_target",
+                    })
+                    .format("%d-%m-%y")
+                    .show_icon(false)
+                    .arrows(false),
+                );
+                if ui.button("Now").clicked() {
+                    match id {
+                        TimeID::Calibration => calc.cal_date = jiff::Zoned::now().date(),
+                        TimeID::Target => calc.target_date = jiff::Zoned::now().date(),
+                    }
+                }
+            });
+
             ui.end_row();
 
             ui.label("Time");
@@ -189,7 +202,7 @@ fn grid(calc: &mut Calculator, ui: &mut egui::Ui, id: &TimeID) {
                             calc.kb_activity_open = true;
                         }
 
-                        calc.input = calc.kb_activity.get_f() as f32;
+                        calc.input = calc.kb_activity.get_f();
                     } else {
                         ui.add(
                             egui::DragValue::new(&mut calc.input)
@@ -325,4 +338,12 @@ fn time_picker(ui: &mut egui::Ui, calc: &mut Calculator, id: &TimeID) {
             }
         }
     });
+}
+
+fn duration_in_seconds(dt1: jiff::civil::DateTime, dt2: jiff::civil::DateTime) -> f64 {
+    let span = dt1 - dt2;
+
+    // 2. Explicitly tell Jiff to treat all days as 86,400 seconds
+    span.total(jiff::SpanTotal::from(jiff::Unit::Second).days_are_24_hours())
+        .unwrap_or_default()
 }
