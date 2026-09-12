@@ -58,9 +58,9 @@ impl Isotope {
     pub fn hl(&self) -> Duration {
         match self {
             Self::Tc99m => Duration::from_secs_f32(21623.76),
-            Self::I131 => Duration::from_secs_f32(693351.36),
+            Self::I131 => Duration::from_secs_f32(693_351.4),
             Self::I123 => Duration::from_secs_f32(47603.52),
-            Self::Lu177 => Duration::from_secs_f32(574067.52),
+            Self::Lu177 => Duration::from_secs_f32(574_067.5),
             Self::Ra223 => Duration::from_secs_f32(988001.28),
             Self::F18 => Duration::from_secs_f32(6584.60),
             Self::Ga68 => Duration::from_secs_f32(4070.52),
@@ -104,6 +104,7 @@ impl Isotope {
                 egui::FontSelection::Default,
                 egui::Align::Min,
             );
+
         job
     }
 }

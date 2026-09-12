@@ -50,8 +50,8 @@ impl Info {
 }
 
 fn parse_hl(duration: f32) -> String {
-    if duration >= 63115200.0 {
-        format!("{:.2} years", duration / 31557600.0)
+    if duration >= 3.15576e7 {
+        format!("{:.2} years", duration / 3.15576e7)
     } else if duration >= 86400.0 {
         format!("{:.2} days", duration / 86400.0)
     } else if duration >= 7200.0 {
