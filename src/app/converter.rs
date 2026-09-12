@@ -1,3 +1,4 @@
+
 use crate::app;
 use crate::app::enums::Unit;
 
@@ -5,6 +6,8 @@ use crate::app::enums::Unit;
 pub struct Converter {
     input: f32,
     unit: app::enums::Unit,
+    kb: app::keyboard::Keyboard,
+    modal_open: bool,
 }
 
 impl Default for Converter {
@@ -12,6 +15,8 @@ impl Default for Converter {
         Self {
             input: 0.0,
             unit: app::enums::Unit::MegaBq,
+            kb: app::keyboard::Keyboard::new(None, true, "0", None),
+            modal_open: false,
         }
     }
 }
@@ -66,12 +71,24 @@ impl Converter {
                                             });
                                     });
 
-                                    ui.add(
-                                        egui::DragValue::new(&mut self.input)
-                                            .range(0.0..=1000000.0)
-                                            .max_decimals(4)
-                                            .update_while_editing(false),
-                                    );
+                                    if crate::app::is_kb_active(ui) {
+                                        let b = ui.add(
+                                            egui::Button::new(format!("{}", self.input))
+                                                .min_size(egui::Vec2 { x: 50.0, y: 10.0 }),
+                                        );
+                                        if b.clicked() {
+                                            self.modal_open = true;
+                                        }
+
+                                        self.input = self.kb.get_f() as f32;
+                                    } else {
+                                        ui.add(
+                                            egui::DragValue::new(&mut self.input)
+                                                .range(0.0..=1000000.0)
+                                                .max_decimals(4)
+                                                .update_while_editing(false),
+                                        );
+                                    }
 
                                     ui.end_row();
 
@@ -103,6 +120,10 @@ impl Converter {
                                     ));
                                     ui.end_row();
                                 });
+
+                            if self.modal_open {
+                                self.kb.show(ui, &mut self.modal_open);
+                            }
                         });
                 });
             });

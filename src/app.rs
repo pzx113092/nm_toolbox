@@ -2,6 +2,7 @@ mod calculator;
 mod converter;
 mod enums;
 mod info;
+mod keyboard;
 
 use enums::Isotope;
 
@@ -54,6 +55,8 @@ pub struct App {
 
     widget_open: WidgetOpen,
     widget_selection: WidgetSelection,
+
+    pub on_screen_keyboard: bool,
 }
 
 impl Default for App {
@@ -64,6 +67,7 @@ impl Default for App {
             zoom_factor: 1.0,
             widget_open: WidgetOpen::default(),
             widget_selection: WidgetSelection::None,
+            on_screen_keyboard: true,
         }
     }
 }
@@ -73,6 +77,9 @@ impl App {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
+
+        replace_fonts(&cc.egui_ctx);
+
         set_text_sizes(&cc.egui_ctx);
         cc.egui_ctx.set_zoom_factor(1.3);
 
@@ -114,16 +121,25 @@ impl eframe::App for App {
                     self.settings = true;
                 }
                 ui.add(egui::Separator::default().vertical());
-                if ui.button("⟲ Reset").clicked() {
+                if ui.button("⟲ reset").clicked() {
                     *self = Self::default();
                 }
+
                 ui.add(egui::Separator::default().vertical());
+
+                ui.checkbox(&mut self.on_screen_keyboard, "touch screen");
+                ui.ctx().data_mut(|data| {
+                    data.insert_temp(egui::Id::new("kb_state"), self.on_screen_keyboard)
+                });
+                ui.add(egui::Separator::default().vertical());
+
                 if ui.button("➖").clicked() {
                     self.zoom_factor -= 0.1;
                 }
                 if ui.button("➕").clicked() {
                     self.zoom_factor += 0.1;
                 }
+                ui.add(egui::Separator::default().vertical());
             });
         });
 
@@ -145,6 +161,37 @@ impl eframe::App for App {
             self.widget_open.show_all(ui);
         });
     }
+}
+
+fn replace_fonts(ctx: &egui::Context) {
+    // Start with the default fonts (we will be adding to them rather than replacing them).
+    let mut fonts = egui::FontDefinitions::default();
+
+    // Install my own font (maybe supporting non-latin characters).
+    // .ttf and .otf files supported.
+    fonts.font_data.insert(
+        "DejavuSansMono".to_owned(),
+        std::sync::Arc::new(egui::FontData::from_static(include_bytes!(
+            "../assets/DejavuSansMono.ttf"
+        ))),
+    );
+
+    // Put my font first (highest priority) for proportional text:
+    fonts
+        .families
+        .entry(egui::FontFamily::Proportional)
+        .or_default()
+        .insert(0, "DejavuSansMono".to_owned());
+
+    // Put my font as last fallback for monospace:
+    fonts
+        .families
+        .entry(egui::FontFamily::Monospace)
+        .or_default()
+        .push("DejavuSansMono".to_owned());
+
+    // Tell egui to use these fonts:
+    ctx.set_fonts(fonts);
 }
 
 pub fn set_text_sizes(ctx: &egui::Context) {
@@ -186,4 +233,11 @@ fn activity_left(n0: f64, hl: f64, t: f64) -> f64 {
     }
     let exponent = -(std::f64::consts::LN_2 * t) / hl;
     n0 + (n0 * exponent.exp_m1())
+}
+
+pub fn is_kb_active(ui: &egui::Ui) -> bool {
+    ui.data(|data| {
+        data.get_temp::<bool>(egui::Id::new("kb_state"))
+            .unwrap_or(false)
+    })
 }
