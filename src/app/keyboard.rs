@@ -1,4 +1,3 @@
-
 pub struct Keyboard {
     name: Option<String>,
     decimal: bool,
@@ -155,9 +154,9 @@ impl Keyboard {
                             && ui
                                 .add(egui::Button::new("∙").min_size(egui::Vec2::new(52.0, 52.0)))
                                 .clicked()
-                            {
-                                input_digit(self, ".");
-                            }
+                        {
+                            input_digit(self, ".");
+                        }
                     });
             });
 
@@ -169,11 +168,10 @@ impl Keyboard {
                     if ui.button("Save").clicked() {
                         if self.decimal {
                             match self.input.chars().last() {
-                                Some(last_char)
-                                    if &format!("{last_char}") == "." => {
-                                        input_digit(self, "0");
-                                    }
-                                _ => {},
+                                Some(last_char) if &format!("{last_char}") == "." => {
+                                    input_digit(self, "0");
+                                }
+                                _ => {}
                             }
                             self.value_f = self.input.parse().unwrap_or(0.0);
                         } else {

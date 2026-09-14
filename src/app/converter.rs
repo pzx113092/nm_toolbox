@@ -1,4 +1,3 @@
-
 use crate::app;
 use crate::app::enums::Unit;
 
@@ -28,7 +27,7 @@ impl Converter {
             .constrain_to(ui.available_rect_before_wrap())
             .title_bar(false)
             .movable(false)
-            .anchor(egui::Align2::LEFT_TOP, egui::Vec2::ZERO)
+            .anchor(egui::Align2::CENTER_TOP, egui::Vec2::ZERO)
             .show(ui, |ui| {
                 ui.vertical_centered(|ui| {
                     //ui.heading("Unit converter");
