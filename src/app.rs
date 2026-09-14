@@ -65,7 +65,7 @@ impl Default for App {
             zoom_factor: 1.0,
             widget_open: WidgetOpen::default(),
             widget_selection: WidgetSelection::None,
-            on_screen_keyboard: true,
+            on_screen_keyboard: false,
         }
     }
 }
