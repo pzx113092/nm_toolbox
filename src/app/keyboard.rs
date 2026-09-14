@@ -1,8 +1,5 @@
-
-#[derive(serde::Deserialize, serde::Serialize)]
 pub struct Keyboard {
     name: Option<String>,
-    save_progress: Option<f32>,
     decimal: bool,
     input: String,
     value_f: f64,
@@ -14,7 +11,6 @@ impl Default for Keyboard {
     fn default() -> Self {
         Self {
             name: None,
-            save_progress: None,
             decimal: false,
             input: "0".to_owned(),
             value_f: 0.0,
@@ -36,7 +32,6 @@ impl Keyboard {
     pub fn new(name: Option<String>, decimal: bool, input: &str, limit: Option<i32>) -> Self {
         Self {
             name,
-            save_progress: None,
             decimal,
             input: input.to_owned(),
             value_f: input.parse().unwrap_or_default(),
@@ -159,9 +154,9 @@ impl Keyboard {
                             && ui
                                 .add(egui::Button::new("∙").min_size(egui::Vec2::new(52.0, 52.0)))
                                 .clicked()
-                            {
-                                input_digit(self, ".");
-                            }
+                        {
+                            input_digit(self, ".");
+                        }
                     });
             });
 
@@ -173,11 +168,10 @@ impl Keyboard {
                     if ui.button("Save").clicked() {
                         if self.decimal {
                             match self.input.chars().last() {
-                                Some(last_char)
-                                    if &format!("{last_char}") == "." => {
-                                        input_digit(self, "0");
-                                    }
-                                _ => {},
+                                Some(last_char) if &format!("{last_char}") == "." => {
+                                    input_digit(self, "0");
+                                }
+                                _ => {}
                             }
                             self.value_f = self.input.parse().unwrap_or(0.0);
                         } else {

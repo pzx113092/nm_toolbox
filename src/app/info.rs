@@ -1,6 +1,5 @@
 use crate::app::enums::Isotope;
 
-#[derive(serde::Deserialize, serde::Serialize)]
 pub struct Info {
     isotope: Isotope,
 }
@@ -21,7 +20,7 @@ impl Info {
             .constrain_to(ui.available_rect_before_wrap())
             .title_bar(false)
             .movable(false)
-            .anchor(egui::Align2::LEFT_TOP, egui::Vec2::ZERO)
+            .anchor(egui::Align2::CENTER_TOP, egui::Vec2::ZERO)
             .show(ui, |ui| {
                 egui::Frame::new()
                     .inner_margin(egui::Margin::same(10))

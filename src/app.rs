@@ -13,7 +13,7 @@ use crate::app::{
     info::Info,
 };
 
-#[derive(serde::Deserialize, serde::Serialize, Default)]
+#[derive(Default)]
 pub struct WidgetOpen {
     calculator: bool,
     converter: bool,
@@ -45,8 +45,6 @@ impl WidgetOpen {
     }
 }
 
-#[derive(serde::Deserialize, serde::Serialize)]
-#[serde(default)]
 pub struct App {
     // Converter
     style: bool,
@@ -73,29 +71,15 @@ impl Default for App {
 }
 
 impl App {
-    /// Called once before the first frame.
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        // This is also where you can customize the look and feel of egui using
-        // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
-
         replace_fonts(&cc.egui_ctx);
-
         set_text_sizes(&cc.egui_ctx);
         cc.egui_ctx.set_zoom_factor(1.3);
-
-        if let Some(storage) = cc.storage {
-            eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default()
-        } else {
-            Default::default()
-        }
+        Default::default()
     }
 }
 
 impl eframe::App for App {
-    fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, eframe::APP_KEY, self);
-    }
-
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         //let visuals = ui.ctx().global_style().visuals.clone();
         let s = ui.ctx().clone();
@@ -115,50 +99,57 @@ impl eframe::App for App {
 
         egui::Panel::top("top_panel").show(ui, |ui| {
             egui::MenuBar::new().ui(ui, |ui| {
-                egui::widgets::global_theme_preference_switch(ui);
-                ui.add(egui::Separator::default().vertical());
-                if ui.button("🔧").clicked() {
-                    self.settings = true;
-                }
-                ui.add(egui::Separator::default().vertical());
-                if ui.button("⟲ reset").clicked() {
-                    *self = Self::default();
-                }
+                ui.collapsing("Settings", |ui| {
+                    ui.horizontal(|ui| {
+                        ui.label("zoom: ");
+                        if ui.button("➖").clicked() {
+                            self.zoom_factor -= 0.1;
+                        }
+                        if ui.button("➕").clicked() {
+                            self.zoom_factor += 0.1;
+                        }
+                    });
+                    egui::widgets::global_theme_preference_buttons(ui);
+                    ui.checkbox(&mut self.on_screen_keyboard, "touch screen");
 
-                ui.add(egui::Separator::default().vertical());
-
-                ui.checkbox(&mut self.on_screen_keyboard, "touch screen");
-                ui.ctx().data_mut(|data| {
-                    data.insert_temp(egui::Id::new("kb_state"), self.on_screen_keyboard)
+                    ui.add(egui::Separator::default().vertical());
+                    if ui.button("⟲ reset").clicked() {
+                        *self = Self::default();
+                    }
+                    ui.ctx().data_mut(|data| {
+                        data.insert_temp(egui::Id::new("kb_state"), self.on_screen_keyboard)
+                    });
+                    if ui.button("🔧 other").clicked() {
+                        self.settings = true;
+                    }
                 });
-                ui.add(egui::Separator::default().vertical());
-
-                if ui.button("➖").clicked() {
-                    self.zoom_factor -= 0.1;
-                }
-                if ui.button("➕").clicked() {
-                    self.zoom_factor += 0.1;
-                }
-                ui.add(egui::Separator::default().vertical());
             });
         });
 
         egui::CentralPanel::default().show(ui, |ui| {
-            ui.horizontal(|ui| {
-                ui.radio_value(
-                    &mut self.widget_selection,
-                    WidgetSelection::Calculator,
-                    "Calculator",
-                );
-                ui.radio_value(
-                    &mut self.widget_selection,
-                    WidgetSelection::Converter,
-                    "Converter",
-                );
-                ui.radio_value(&mut self.widget_selection, WidgetSelection::Info, "Info");
-            });
+            ui.radio_value(
+                &mut self.widget_selection,
+                WidgetSelection::Calculator,
+                "Calculator",
+            );
+            ui.radio_value(
+                &mut self.widget_selection,
+                WidgetSelection::Converter,
+                "Converter",
+            );
+            ui.radio_value(&mut self.widget_selection, WidgetSelection::Info, "Info");
+
             self.widget_open.swap(&self.widget_selection);
             self.widget_open.show_all(ui);
+
+            ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
+                use egui::special_emojis::GITHUB;
+
+                ui.hyperlink_to(
+                    format!("{GITHUB} Jakub Olejnik"),
+                    "https://github.com/pzx113092/nm_toolbox",
+                )
+            });
         });
     }
 }

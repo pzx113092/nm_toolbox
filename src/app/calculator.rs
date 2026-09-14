@@ -1,6 +1,5 @@
 use crate::app::enums::Isotope;
 
-#[derive(serde::Deserialize, serde::Serialize)]
 pub struct Calculator {
     input: f32,
     isotope: Isotope,
@@ -101,7 +100,7 @@ impl Calculator {
             .constrain_to(ui.available_rect_before_wrap())
             .title_bar(false)
             .movable(false)
-            .anchor(egui::Align2::LEFT_TOP, egui::Vec2::ZERO)
+            .anchor(egui::Align2::CENTER_TOP, egui::Vec2::ZERO)
             .show(ui, |ui| {
                 crate::app::isotope_combo(&mut self.isotope, ui, "second");
 
