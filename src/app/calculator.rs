@@ -1,6 +1,5 @@
 use crate::app::enums::Isotope;
 
-#[derive(serde::Deserialize, serde::Serialize)]
 pub struct Calculator {
     input: f32,
     isotope: Isotope,

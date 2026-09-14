@@ -2,7 +2,6 @@
 use crate::app;
 use crate::app::enums::Unit;
 
-#[derive(serde::Deserialize, serde::Serialize)]
 pub struct Converter {
     input: f32,
     unit: app::enums::Unit,

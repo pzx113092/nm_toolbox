@@ -1,8 +1,6 @@
 
-#[derive(serde::Deserialize, serde::Serialize)]
 pub struct Keyboard {
     name: Option<String>,
-    save_progress: Option<f32>,
     decimal: bool,
     input: String,
     value_f: f64,
@@ -14,7 +12,6 @@ impl Default for Keyboard {
     fn default() -> Self {
         Self {
             name: None,
-            save_progress: None,
             decimal: false,
             input: "0".to_owned(),
             value_f: 0.0,
@@ -36,7 +33,6 @@ impl Keyboard {
     pub fn new(name: Option<String>, decimal: bool, input: &str, limit: Option<i32>) -> Self {
         Self {
             name,
-            save_progress: None,
             decimal,
             input: input.to_owned(),
             value_f: input.parse().unwrap_or_default(),

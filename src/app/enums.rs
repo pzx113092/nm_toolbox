@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-#[derive(PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+#[derive(PartialEq, Eq)]
 pub enum WidgetSelection {
     Calculator,
     Converter,
@@ -8,13 +8,13 @@ pub enum WidgetSelection {
     None,
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(Debug)]
 pub enum TimeID {
     Calibration,
     Target,
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Unit {
     MegaBq,
     GigaBq,
@@ -42,7 +42,7 @@ impl Unit {
     }
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Isotope {
     Tc99m,
     I131,
