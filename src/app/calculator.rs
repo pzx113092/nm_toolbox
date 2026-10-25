@@ -1,3 +1,5 @@
+use jiff::SpanTotal;
+
 use crate::app::enums::Isotope;
 
 pub struct Calculator {
@@ -8,10 +10,6 @@ pub struct Calculator {
     cal_time: (i8, i8, i8),
     target_time: (i8, i8, i8),
 
-    // kb_cal_h_input: i32,
-    // kb_cal_m_input: i32,
-    // kb_target_h_input: i32,
-    // kb_target_m_input: i32,
     kb_cal_h: app::keyboard::Keyboard,
     kb_cal_m: app::keyboard::Keyboard,
     kb_cal_h_open: bool,
@@ -38,10 +36,6 @@ impl Default for Calculator {
             cal_time: time,
             target_time: time,
 
-            // kb_cal_h_input: 0,
-            // kb_cal_m_input: 0,
-            // kb_target_h_input: 0,
-            // kb_target_m_input: 0,
             kb_cal_h: app::keyboard::Keyboard::new(
                 Some("Hour".to_owned()),
                 false,
@@ -87,8 +81,14 @@ impl Calculator {
             self.target_time.2,
             0,
         );
-        let span = self.target_date.to_datetime(tar_t) - self.cal_date.to_datetime(cal_t);
-        let span_f = span.total(jiff::Unit::Second).unwrap_or(0.0);
+
+        let td = self.target_date.to_datetime(tar_t);
+        let cd = self.cal_date.to_datetime(cal_t);
+
+        let span = td - cd;
+        let span_f = span
+            .total(SpanTotal::from(jiff::Unit::Second).days_are_24_hours())
+            .expect("Error");
 
         crate::app::activity_left(self.input, self.isotope.hl().as_secs_f32(), span_f as f32)
     }

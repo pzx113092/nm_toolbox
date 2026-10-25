@@ -6,7 +6,6 @@
     <!-- Disable zooming: -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     
-    <!-- change this to your project name -->
     <title>nm_toolbox</title>
 
     <!-- config for our rust wasm binary. go to https://trunkrs.dev/assets/#rust for more customization -->
@@ -22,7 +21,9 @@
     <link data-trunk rel="copy-file" href="assets/favicon-192x192.png" data-target-path="assets"/>
     <link data-trunk rel="copy-file" href="assets/favicon-512x512.png" data-target-path="assets"/>
     <link data-trunk rel="copy-file" href="assets/apple-touch-icon.png" data-target-path="assets"/>
-
+    <link data-trunk rel="copy-file" href="assets/Hack-Regular.ttf" data-target-path="assets"/>
+    <link data-trunk rel="copy-file" href="assets/Hack-Regular.txt" data-target-path="assets"/>
+    <link data-trunk rel="copy-file" href="assets/DejavuSansMono.ttf" data-target-path="assets"/>
 
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -131,6 +132,8 @@
         <div class="lds-dual-ring"></div>
     </div>
 
+    
+
     <!--Register Service Worker. this will cache the wasm / js scripts for offline use (for PWA functionality). -->
     <!-- Force refresh (Ctrl + F5) to load the latest files instead of cached files  -->
     <script>
@@ -140,9 +143,9 @@
                 navigator.serviceWorker.register('sw.js');
             });
         }
+
+
     </script>
+    <script type="text/javascript" id="cookiebanner" src="https://cdn.jsdelivr.net/gh/dobarkod/cookie-banner@1.2.2/dist/cookiebanner.min.js"></script>
 </body>
-
 </html>
-
-<!-- Powered by egui: https://github.com/emilk/egui/ -->
