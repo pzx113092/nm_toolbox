@@ -65,7 +65,7 @@ impl Default for App {
             zoom_factor: 1.0,
             widget_open: WidgetOpen::default(),
             widget_selection: WidgetSelection::None,
-            on_screen_keyboard: false,
+            on_screen_keyboard: true,
         }
     }
 }
@@ -99,30 +99,59 @@ impl eframe::App for App {
 
         egui::Panel::top("top_panel").show(ui, |ui| {
             egui::MenuBar::new().ui(ui, |ui| {
-                ui.collapsing("Settings", |ui| {
-                    ui.horizontal(|ui| {
-                        ui.label("zoom: ");
-                        if ui.button("➖").clicked() {
-                            self.zoom_factor -= 0.1;
-                        }
-                        if ui.button("➕").clicked() {
-                            self.zoom_factor += 0.1;
-                        }
-                    });
-                    egui::widgets::global_theme_preference_buttons(ui);
-                    ui.checkbox(&mut self.on_screen_keyboard, "touch screen");
+                egui::CollapsingHeader::new("Settings")
+                    .default_open(false)
+                    .show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            ui.label("zoom: ");
+                            if ui.button("➖").clicked() {
+                                self.zoom_factor -= 0.1;
+                            }
+                            if ui.button("➕").clicked() {
+                                self.zoom_factor += 0.1;
+                            }
+                        });
 
-                    ui.add(egui::Separator::default().vertical());
-                    if ui.button("⟲ reset").clicked() {
-                        *self = Self::default();
-                    }
-                    ui.ctx().data_mut(|data| {
-                        data.insert_temp(egui::Id::new("kb_state"), self.on_screen_keyboard)
+                        ui.add(egui::Separator::default().vertical());
+                        if ui.button("⟲ reset").clicked() {
+                            *self = Self::default();
+                        }
+
+                        if ui.button("🔧 other").clicked() {
+                            self.settings = true;
+                        }
                     });
-                    if ui.button("🔧 other").clicked() {
-                        self.settings = true;
-                    }
+
+                ui.add(egui::Separator::default().vertical());
+                ui.checkbox(&mut self.on_screen_keyboard, "Touch screen");
+                ui.data_mut(|data| {
+                    data.insert_temp(egui::Id::unique("kb_state"), self.on_screen_keyboard)
                 });
+
+                // ui.collapsing("Settings", |ui| {
+                //     ui.horizontal(|ui| {
+                //         ui.label("zoom: ");
+                //         if ui.button("➖").clicked() {
+                //             self.zoom_factor -= 0.1;
+                //         }
+                //         if ui.button("➕").clicked() {
+                //             self.zoom_factor += 0.1;
+                //         }
+                //     });
+                //     egui::widgets::global_theme_preference_buttons(ui);
+                //     ui.checkbox(&mut self.on_screen_keyboard, "touch screen");
+
+                //     ui.add(egui::Separator::default().vertical());
+                //     if ui.button("⟲ reset").clicked() {
+                //         *self = Self::default();
+                //     }
+                //     ui.data_mut(|data| {
+                //         data.insert_temp(egui::Id::unique("kb_state"), self.on_screen_keyboard)
+                //     });
+                //     if ui.button("🔧 other").clicked() {
+                //         self.settings = true;
+                //     }
+                // });
             });
         });
 
@@ -160,10 +189,17 @@ fn replace_fonts(ctx: &egui::Context) {
 
     // Install my own font (maybe supporting non-latin characters).
     // .ttf and .otf files supported.
+    // fonts.font_data.insert(
+    //     "DejavuSansMono".to_owned(),
+    //     std::sync::Arc::new(egui::FontData::from_static(include_bytes!(
+    //         "../assets/DejavuSansMono.ttf"
+    //     ))),
+    // );
+
     fonts.font_data.insert(
-        "DejavuSansMono".to_owned(),
+        "Hack".to_owned(),
         std::sync::Arc::new(egui::FontData::from_static(include_bytes!(
-            "../assets/DejavuSansMono.ttf"
+            "../assets/Hack-Regular.ttf"
         ))),
     );
 
@@ -172,14 +208,14 @@ fn replace_fonts(ctx: &egui::Context) {
         .families
         .entry(egui::FontFamily::Proportional)
         .or_default()
-        .insert(0, "DejavuSansMono".to_owned());
+        .insert(0, "Hack".to_owned());
 
     // Put my font as last fallback for monospace:
     fonts
         .families
         .entry(egui::FontFamily::Monospace)
         .or_default()
-        .push("DejavuSansMono".to_owned());
+        .push("Hack".to_owned());
 
     // Tell egui to use these fonts:
     ctx.set_fonts(fonts);
@@ -230,7 +266,7 @@ fn activity_left(n0: f32, hl: f32, t: f32) -> f32 {
 
 pub fn is_kb_active(ui: &egui::Ui) -> bool {
     ui.data(|data| {
-        data.get_temp::<bool>(egui::Id::new("kb_state"))
+        data.get_temp::<bool>(egui::Id::unique("kb_state"))
             .unwrap_or(false)
     })
 }

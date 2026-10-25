@@ -1,4 +1,5 @@
 pub struct Keyboard {
+    modal_id: egui::Id,
     name: Option<String>,
     decimal: bool,
     input: String,
@@ -10,6 +11,7 @@ pub struct Keyboard {
 impl Default for Keyboard {
     fn default() -> Self {
         Self {
+            modal_id: egui::Id::unique("modal1"),
             name: None,
             decimal: false,
             input: "0".to_owned(),
@@ -31,6 +33,7 @@ impl Keyboard {
 
     pub fn new(name: Option<String>, decimal: bool, input: &str, limit: Option<i32>) -> Self {
         Self {
+            modal_id: egui::Id::unique("modal1"),
             name,
             decimal,
             input: input.to_owned(),
@@ -41,7 +44,7 @@ impl Keyboard {
     }
 
     pub fn show(&mut self, ui: &egui::Ui, open: &mut bool) {
-        egui::Modal::new(egui::Id::from("modal")).show(ui.ctx(), |ui| {
+        let m = egui::Modal::new(self.modal_id).show(ui.ctx(), |ui| {
             if self.input.is_empty() {
                 self.input = "0".to_owned();
             }
@@ -139,7 +142,13 @@ impl Keyboard {
                         ui.end_row();
 
                         if ui
-                            .add(egui::Button::new("C").min_size(egui::Vec2::new(52.0, 52.0)))
+                            .add(
+                                egui::Button::new(
+                                    egui::RichText::new("CA").color(egui::Color32::RED),
+                                )
+                                .min_size(egui::Vec2::new(52.0, 52.0))
+                                .stroke(egui::Stroke::new(1.0, egui::Color32::RED)),
+                            )
                             .clicked()
                         {
                             input_digit(self, "c");
@@ -165,7 +174,7 @@ impl Keyboard {
                 ui,
                 |_ui| {},
                 |ui| {
-                    if ui.button("Save").clicked() {
+                    if ui.button("Ok").clicked() {
                         if self.decimal {
                             match self.input.chars().last() {
                                 Some(last_char) if &format!("{last_char}") == "." => {
@@ -189,18 +198,18 @@ impl Keyboard {
                         }
                         *open = false;
                     }
-
-                    if ui.button("Exit").clicked() {
-                        if self.decimal {
-                            self.input = format!("{}", self.value_f);
-                        } else {
-                            self.input = format!("{}", self.value_i);
-                        }
-                        *open = false;
-                    }
                 },
             );
         });
+
+        if m.should_close() {
+            if self.decimal {
+                self.input = format!("{}", self.value_f);
+            } else {
+                self.input = format!("{}", self.value_i);
+            }
+            *open = false;
+        }
     }
 }
 
